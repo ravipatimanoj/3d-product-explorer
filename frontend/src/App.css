@@ -327,17 +327,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: visible;
 }
 
 .hotspot-pin {
-  width: 28px;
-  height: 28px;
+  position: relative;
+  width: 36px;
+  height: 36px;
   border: 0;
   padding: 0;
   display: grid;
   place-items: center;
   background: transparent;
   cursor: pointer;
+  overflow: visible;
 }
 
 .hotspot-core {
@@ -376,6 +379,36 @@
     0 0 16px rgba(17, 24, 39, 0.22);
 }
 
+.hotspot-pulse {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.28);
+  pointer-events: none;
+  animation: hotspot-pulse 1.8s ease-out infinite;
+}
+
+.hotspot-pulse--delayed {
+  animation-delay: 0.9s;
+}
+
+@keyframes hotspot-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  75% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
 .hotspot-pin:focus {
   outline: none;
 }
@@ -405,6 +438,12 @@
 @media (prefers-reduced-motion: reduce) {
   .hotspot-core {
     transition: none;
+  }
+
+  .hotspot-pulse {
+    animation: none;
+    opacity: 0.28;
+    transform: scale(1.85);
   }
 }
 

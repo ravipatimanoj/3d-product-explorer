@@ -180,27 +180,49 @@ function CameraModule({ selectedNodeName, onSelectNode }: PartProps) {
 
   return (
     <SelectablePart nodeName="camera" onSelectNode={onSelectNode}>
-      <group position={[0.16, 0.9, -PHONE.depth / 2 - 0.01]}>
-        <RoundedBox args={[0.38, 0.42, 0.012]} radius={0.07} smoothness={4}>
+      <group name="camera-module" position={[0.16, 0.9, -PHONE.depth / 2 - 0.012]}>
+        <RoundedBox args={[0.42, 0.46, 0.016]} radius={0.12} smoothness={6}>
           <meshStandardMaterial
-            color="#b7c0cb"
-            metalness={0.7}
-            roughness={0.22}
+            color="#9aa3ad"
+            metalness={0.82}
+            roughness={0.2}
           />
         </RoundedBox>
-        <RoundedBox args={[0.36, 0.4, 0.03]} radius={0.06} smoothness={4} castShadow>
+        <RoundedBox
+          args={[0.4, 0.44, 0.034]}
+          radius={0.11}
+          smoothness={6}
+          castShadow
+        >
           <meshStandardMaterial
             color={look.color}
-            metalness={0.62}
-            roughness={0.24}
+            metalness={0.58}
+            roughness={0.28}
             emissive={look.emissive}
             emissiveIntensity={look.emissiveIntensity}
           />
           <SelectionOutline selected={look.selected} />
         </RoundedBox>
-        <Lens position={[-0.08, 0.08, 0.02]} radius={0.058} selected={look.selected} />
-        <Lens position={[0.08, 0.08, 0.02]} radius={0.046} selected={look.selected} />
-        <Lens position={[-0.08, -0.09, 0.02]} radius={0.04} selected={look.selected} />
+        <group name="camera-lenses">
+          <Lens
+            name="camera-lens-main"
+            position={[-0.078, 0.078, -0.03]}
+            radius={0.072}
+            selected={look.selected}
+          />
+          <Lens
+            name="camera-lens-wide"
+            position={[0.078, 0.078, -0.03]}
+            radius={0.062}
+            selected={look.selected}
+          />
+          <Lens
+            name="camera-lens-tele"
+            position={[0, -0.086, -0.03]}
+            radius={0.054}
+            selected={look.selected}
+          />
+        </group>
       </group>
     </SelectablePart>
   )
@@ -211,17 +233,23 @@ function Flash({ selectedNodeName, onSelectNode }: PartProps) {
 
   return (
     <SelectablePart nodeName="flash" onSelectNode={onSelectNode}>
-      <mesh position={[0.28, 0.81, -PHONE.depth / 2 - 0.018]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.018, 0.018, 0.01, 24]} />
-        <meshStandardMaterial
-          color={look.color}
-          emissive={look.selected ? '#fff3c4' : '#f7f1d8'}
-          emissiveIntensity={look.selected ? 1.4 : 0.35}
-          metalness={0.2}
-          roughness={0.18}
-        />
-        <SelectionOutline selected={look.selected} />
-      </mesh>
+      <group name="flash-module" position={[0.28, 0.81, -PHONE.depth / 2 - 0.018]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.024, 0.024, 0.008, 28]} />
+          <meshStandardMaterial color="#d7dde4" metalness={0.92} roughness={0.14} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.004]}>
+          <cylinderGeometry args={[0.016, 0.016, 0.01, 28]} />
+          <meshStandardMaterial
+            color={look.color}
+            emissive={look.selected ? '#fff3c4' : '#f7f1d8'}
+            emissiveIntensity={look.selected ? 1.4 : 0.35}
+            metalness={0.2}
+            roughness={0.18}
+          />
+          <SelectionOutline selected={look.selected} />
+        </mesh>
+      </group>
     </SelectablePart>
   )
 }
@@ -443,39 +471,52 @@ function Processor({ selectedNodeName, onSelectNode }: PartProps) {
 }
 
 function Lens({
+  name,
   position,
   radius,
   selected,
 }: {
+  name: string
   position: [number, number, number]
   radius: number
   selected: boolean
 }) {
   return (
-    <group position={position}>
+    <group name={name} position={position}>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[radius + 0.006, radius + 0.006, 0.008, 32]} />
-        <meshStandardMaterial color="#c5ccd4" metalness={0.85} roughness={0.18} />
+        <cylinderGeometry args={[radius + 0.012, radius + 0.012, 0.012, 48]} />
+        <meshStandardMaterial color="#d5dbe2" metalness={0.96} roughness={0.1} />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.002]}>
-        <cylinderGeometry args={[radius, radius, 0.012, 32]} />
-        <meshStandardMaterial
-          color="#1a1f28"
-          metalness={0.9}
-          roughness={0.12}
-          emissive={selected ? ACCENT_EMISSIVE : '#10141c'}
-          emissiveIntensity={selected ? 0.3 : 0.04}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.004]}>
+        <cylinderGeometry args={[radius + 0.004, radius + 0.004, 0.01, 48]} />
+        <meshStandardMaterial color="#1c2128" metalness={0.78} roughness={0.22} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.008]}>
+        <cylinderGeometry args={[radius * 0.9, radius * 0.9, 0.01, 48]} />
+        <meshPhysicalMaterial
+          color={selected ? '#152033' : '#0b1016'}
+          metalness={0.88}
+          roughness={0.06}
+          clearcoat={1}
+          clearcoatRoughness={0.05}
+          reflectivity={0.9}
+          emissive={selected ? ACCENT_EMISSIVE : '#101820'}
+          emissiveIntensity={selected ? 0.28 : 0.05}
         />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.007]}>
-        <cylinderGeometry args={[radius * 0.68, radius * 0.68, 0.008, 32]} />
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.013]}>
+        <cylinderGeometry args={[radius * 0.42, radius * 0.42, 0.004, 32]} />
         <meshPhysicalMaterial
-          color="#1b2838"
+          color="#243246"
           metalness={1}
           roughness={0.04}
-          transmission={0.16}
-          thickness={0.02}
+          clearcoat={1}
+          clearcoatRoughness={0.04}
         />
+      </mesh>
+      <mesh position={[radius * 0.22, radius * 0.18, -0.016]}>
+        <sphereGeometry args={[radius * 0.16, 16, 16]} />
+        <meshBasicMaterial color="#e8eef6" transparent opacity={0.32} />
       </mesh>
     </group>
   )

@@ -6,6 +6,7 @@ import {
   OVERVIEW_CAMERA,
   OVERVIEW_FOV,
   OVERVIEW_TARGET,
+  resolveFeatureFocus,
 } from './cameraOverview'
 import FeatureHotspots from './FeatureHotspots'
 import SmartphoneModel from './SmartphoneModel'
@@ -31,6 +32,7 @@ export default function ProductViewer({
   overviewNonce,
 }: ProductViewerProps) {
   const selectedNodeName = selectedFeature?.modelNodeName ?? null
+  const focus = resolveFeatureFocus(selectedFeature)
 
   const handleSelectNode = (nodeName: string) => {
     const feature = product.features.find(
@@ -105,8 +107,8 @@ export default function ProductViewer({
         />
 
         <CameraRig
-          cameraPosition={selectedFeature?.cameraPosition ?? null}
-          lookAt={selectedFeature?.position ?? null}
+          cameraPosition={focus.cameraPosition}
+          lookAt={focus.lookAt}
           focusNonce={focusNonce}
           overviewNonce={overviewNonce}
         />

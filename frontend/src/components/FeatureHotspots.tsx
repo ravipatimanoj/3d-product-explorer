@@ -51,7 +51,7 @@ function Hotspot({ feature, selected, onSelect }: HotspotProps) {
       sprite
       zIndexRange={[40, 0]}
       occlude={false}
-      style={{ pointerEvents: 'auto' }}
+      style={{ pointerEvents: 'auto', overflow: 'visible' }}
     >
       <div className="hotspot">
         <button
@@ -72,6 +72,12 @@ function Hotspot({ feature, selected, onSelect }: HotspotProps) {
           onBlur={() => setHovered(false)}
         >
           <span className="hotspot-core" aria-hidden="true" />
+          {selected && (
+            <>
+              <span className="hotspot-pulse" aria-hidden="true" />
+              <span className="hotspot-pulse hotspot-pulse--delayed" aria-hidden="true" />
+            </>
+          )}
         </button>
         {hovered && <span className="hotspot-label">{feature.name}</span>}
       </div>
