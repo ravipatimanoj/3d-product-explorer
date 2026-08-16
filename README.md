@@ -14,8 +14,8 @@ A production-quality portfolio project for exploring products in an interactive 
 
 Contains the React application built with TypeScript and Vite. This is the client-facing UI where users browse and interact with products.
 
+- **Three.js + React Three Fiber** power an interactive procedural smartphone viewer
 - **3D models** will later be stored under `frontend/public/models/`
-- **Three.js + React Three Fiber** will be added later for the 3D viewer
 - **AI-controlled 3D actions** will be integrated later
 
 ### `backend/`
@@ -149,6 +149,15 @@ mvn test
 mvn spring-boot:run
 ```
 
+## Running the Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+The Vite app runs at `http://localhost:5173` and expects the backend at `http://localhost:8080`.
+
 ## Status
 
-Current phase: product domain and REST APIs with in-memory mock data. Frontend integration will follow in a later phase.
+Current phase: interactive 3D smartphone viewer with feature hotspots, camera focusing, component highlighting, and the existing Spring Boot product API. PostgreSQL, AI, exploded view, and color selection are later phases.
