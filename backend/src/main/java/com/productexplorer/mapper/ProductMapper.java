@@ -1,13 +1,13 @@
 package com.productexplorer.mapper;
 
-import com.productexplorer.domain.FeatureSpecification;
-import com.productexplorer.domain.Position;
-import com.productexplorer.domain.Product;
-import com.productexplorer.domain.ProductFeature;
 import com.productexplorer.dto.FeatureSpecificationResponse;
 import com.productexplorer.dto.PositionResponse;
 import com.productexplorer.dto.ProductFeatureResponse;
 import com.productexplorer.dto.ProductResponse;
+import com.productexplorer.entity.FeatureSpecificationEntity;
+import com.productexplorer.entity.ProductColorEntity;
+import com.productexplorer.entity.ProductEntity;
+import com.productexplorer.entity.ProductFeatureEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,40 +15,44 @@ import java.util.List;
 @Component
 public class ProductMapper {
 
-    public ProductResponse toResponse(Product product) {
+    public ProductResponse toResponse(ProductEntity product) {
         return new ProductResponse(
-                product.id(),
-                product.name(),
-                product.description(),
-                product.category(),
-                product.defaultColor(),
-                product.availableColors(),
-                product.features().stream().map(this::toResponse).toList()
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getCategory(),
+                product.getDefaultColor(),
+                product.getColors().stream().map(ProductColorEntity::getColorName).toList(),
+                toFeatureResponses(product.getFeatures())
         );
     }
 
-    public ProductFeatureResponse toResponse(ProductFeature feature) {
+    public ProductFeatureResponse toResponse(ProductFeatureEntity feature) {
         return new ProductFeatureResponse(
-                feature.id(),
-                feature.name(),
-                feature.description(),
-                feature.category(),
-                feature.modelNodeName(),
-                toResponse(feature.position()),
-                toResponse(feature.cameraPosition()),
-                feature.specifications().stream().map(this::toResponse).toList()
+                feature.getId(),
+                feature.getName(),
+                feature.getDescription(),
+                feature.getCategory(),
+                feature.getModelNodeName(),
+                new PositionResponse(
+                        feature.getPositionX(),
+                        feature.getPositionY(),
+                        feature.getPositionZ()
+                ),
+                new PositionResponse(
+                        feature.getCameraX(),
+                        feature.getCameraY(),
+                        feature.getCameraZ()
+                ),
+                feature.getSpecifications().stream().map(this::toResponse).toList()
         );
     }
 
-    public List<ProductFeatureResponse> toFeatureResponses(List<ProductFeature> features) {
+    public List<ProductFeatureResponse> toFeatureResponses(List<ProductFeatureEntity> features) {
         return features.stream().map(this::toResponse).toList();
     }
 
-    private PositionResponse toResponse(Position position) {
-        return new PositionResponse(position.x(), position.y(), position.z());
-    }
-
-    private FeatureSpecificationResponse toResponse(FeatureSpecification specification) {
-        return new FeatureSpecificationResponse(specification.name(), specification.value());
+    private FeatureSpecificationResponse toResponse(FeatureSpecificationEntity specification) {
+        return new FeatureSpecificationResponse(specification.getName(), specification.getValue());
     }
 }

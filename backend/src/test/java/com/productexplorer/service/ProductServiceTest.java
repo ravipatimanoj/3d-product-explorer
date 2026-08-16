@@ -22,9 +22,12 @@ class ProductServiceTest {
     void getAllProducts_returnsCatalog() {
         List<ProductResponse> products = productService.getAllProducts();
 
-        assertThat(products).hasSize(1);
-        assertThat(products.get(0).id()).isEqualTo("smartphone-001");
-        assertThat(products.get(0).name()).isEqualTo("Premium Flagship Smartphone");
+        assertThat(products).hasSize(3);
+        assertThat(products).extracting(ProductResponse::id)
+                .containsExactlyInAnyOrder("smartphone-001", "tv-001", "refrigerator-001");
+        assertThat(products).filteredOn(product -> "smartphone-001".equals(product.id()))
+                .extracting(ProductResponse::name)
+                .containsExactly("Premium Flagship Smartphone");
     }
 
     @Test
@@ -69,5 +72,30 @@ class ProductServiceTest {
         assertThatThrownBy(() -> productService.getFeatureById("smartphone-001", "missing-feature"))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Feature not found: missing-feature for product: smartphone-001");
+    }
+
+    @Test
+    void getProductById_returnsTelevision() {
+        ProductResponse product = productService.getProductById("tv-001");
+
+        assertThat(product.id()).isEqualTo("tv-001");
+        assertThat(product.category()).isEqualTo("Television");
+        assertThat(product.availableColors()).containsExactly("Graphite", "Silver", "Midnight", "Ivory");
+        assertThat(product.features()).hasSize(10);
+    }
+
+    @Test
+    void getProductById_returnsRefrigerator() {
+        ProductResponse product = productService.getProductById("refrigerator-001");
+
+        assertThat(product.id()).isEqualTo("refrigerator-001");
+        assertThat(product.category()).isEqualTo("Refrigerator");
+        assertThat(product.availableColors()).containsExactly(
+                "Stainless Steel",
+                "Black Stainless",
+                "White",
+                "Slate"
+        );
+        assertThat(product.features()).hasSize(10);
     }
 }
