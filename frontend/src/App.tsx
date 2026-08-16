@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import FeaturePanel from './components/FeaturePanel'
 import ProductViewer from './components/ProductViewer'
 import { useProduct } from './hooks/useProduct'
@@ -15,10 +15,32 @@ function App() {
     retry,
   } = useProduct()
   const [focusNonce, setFocusNonce] = useState(0)
+  const [overviewNonce, setOverviewNonce] = useState(0)
+  const [selectedColor, setSelectedColor] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!product) {
+      return
+    }
+
+    setSelectedColor((current) =>
+      current && product.availableColors.includes(current)
+        ? current
+        : product.defaultColor,
+    )
+  }, [product])
 
   const handleSelectFeature = (feature: ProductFeature) => {
     selectFeature(feature)
     setFocusNonce((value) => value + 1)
+  }
+
+  const handleSelectColor = (color: string) => {
+    setSelectedColor(color)
+  }
+
+  const handleResetView = () => {
+    setOverviewNonce((value) => value + 1)
   }
 
   if (loading) {
@@ -88,8 +110,11 @@ function App() {
             <ProductViewer
               product={product}
               selectedFeature={selectedFeature}
+              selectedColor={selectedColor ?? product.defaultColor}
               onSelectFeature={handleSelectFeature}
+              onResetView={handleResetView}
               focusNonce={focusNonce}
+              overviewNonce={overviewNonce}
             />
           </div>
         </section>
@@ -97,7 +122,9 @@ function App() {
         <FeaturePanel
           product={product}
           selectedFeature={selectedFeature}
+          selectedColor={selectedColor ?? product.defaultColor}
           onSelectFeature={handleSelectFeature}
+          onSelectColor={handleSelectColor}
         />
       </main>
     </div>

@@ -1,20 +1,31 @@
+import ColorSelector from './ColorSelector'
 import type { Product, ProductFeature } from '../types/product'
 
 interface FeaturePanelProps {
   product: Product
   selectedFeature: ProductFeature | null
+  selectedColor: string
   onSelectFeature: (feature: ProductFeature) => void
+  onSelectColor: (color: string) => void
 }
 
 export default function FeaturePanel({
   product,
   selectedFeature,
+  selectedColor,
   onSelectFeature,
+  onSelectColor,
 }: FeaturePanelProps) {
   return (
     <section className="product-info">
       <h2>{product.name}</h2>
       <p>{product.description}</p>
+
+      <ColorSelector
+        colors={product.availableColors}
+        selectedColor={selectedColor}
+        onSelectColor={onSelectColor}
+      />
 
       <div className="feature-card">
         <h3>Product Features</h3>

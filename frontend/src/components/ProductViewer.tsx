@@ -14,15 +14,21 @@ import type { Product, ProductFeature } from '../types/product'
 interface ProductViewerProps {
   product: Product
   selectedFeature: ProductFeature | null
+  selectedColor: string
   onSelectFeature: (feature: ProductFeature) => void
+  onResetView: () => void
   focusNonce: number
+  overviewNonce: number
 }
 
 export default function ProductViewer({
   product,
   selectedFeature,
+  selectedColor,
   onSelectFeature,
+  onResetView,
   focusNonce,
+  overviewNonce,
 }: ProductViewerProps) {
   const selectedNodeName = selectedFeature?.modelNodeName ?? null
 
@@ -67,7 +73,7 @@ export default function ProductViewer({
         />
         <directionalLight
           position={[1.8, 2.4, -5.5]}
-          intensity={1.15}
+          intensity={1.45}
           color="#e7eef6"
         />
         <spotLight
@@ -88,6 +94,7 @@ export default function ProductViewer({
 
         <SmartphoneModel
           selectedNodeName={selectedNodeName}
+          selectedColor={selectedColor}
           onSelectNode={handleSelectNode}
         />
 
@@ -101,6 +108,7 @@ export default function ProductViewer({
           cameraPosition={selectedFeature?.cameraPosition ?? null}
           lookAt={selectedFeature?.position ?? null}
           focusNonce={focusNonce}
+          overviewNonce={overviewNonce}
         />
 
         <ContactShadows
@@ -124,6 +132,13 @@ export default function ProductViewer({
           maxDistance={12}
         />
       </Canvas>
+      <button
+        type="button"
+        className="reset-view-button"
+        onClick={onResetView}
+      >
+        View Full Phone
+      </button>
     </div>
   )
 }

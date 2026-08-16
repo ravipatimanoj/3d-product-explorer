@@ -2,6 +2,10 @@ import { useMemo, type ReactNode } from 'react'
 import { Outlines, RoundedBox } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import {
+  getPhoneAppearance,
+  type PhoneAppearance,
+} from '../phoneAppearance'
 
 const PHONE = {
   width: 0.86,
@@ -11,34 +15,51 @@ const PHONE = {
   centerY: 0.12,
 } as const
 
-const FRAME_COLOR = '#efe6db'
 const GLASS_COLOR = '#10141b'
-const BACK_GLASS_COLOR = '#8fa0b3'
 const ISLAND_COLOR = '#2f3642'
 const ACCENT_EMISSIVE = '#3b82f6'
 
 interface SmartphoneModelProps {
   selectedNodeName: string | null
+  selectedColor: string
   onSelectNode: (nodeName: string) => void
 }
 
 export default function SmartphoneModel({
   selectedNodeName,
+  selectedColor,
   onSelectNode,
 }: SmartphoneModelProps) {
+  const appearance = getPhoneAppearance(selectedColor)
   const internalsOpen =
     selectedNodeName === 'battery' || selectedNodeName === 'processor'
 
   return (
     <group>
-      <Frame selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+      <Frame
+        selectedNodeName={selectedNodeName}
+        onSelectNode={onSelectNode}
+        appearance={appearance}
+      />
       <Display selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <BackGlass internalsOpen={internalsOpen} />
+      <BackGlass internalsOpen={internalsOpen} appearance={appearance} />
       <CameraModule selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
       <Flash selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <ActionButton selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <VolumeButtons selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <PowerButton selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+      <ActionButton
+        selectedNodeName={selectedNodeName}
+        onSelectNode={onSelectNode}
+        color={appearance.frameColor}
+      />
+      <VolumeButtons
+        selectedNodeName={selectedNodeName}
+        onSelectNode={onSelectNode}
+        color={appearance.frameColor}
+      />
+      <PowerButton
+        selectedNodeName={selectedNodeName}
+        onSelectNode={onSelectNode}
+        color={appearance.frameColor}
+      />
       <UsbCPort selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
       <Speaker selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
       <Microphone selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
@@ -53,8 +74,16 @@ interface PartProps {
   onSelectNode: (nodeName: string) => void
 }
 
-function Frame({ selectedNodeName, onSelectNode }: PartProps) {
-  const look = usePartLook('frame', selectedNodeName, FRAME_COLOR)
+interface ExteriorPartProps extends PartProps {
+  color: string
+}
+
+function Frame({
+  selectedNodeName,
+  onSelectNode,
+  appearance,
+}: PartProps & { appearance: PhoneAppearance }) {
+  const look = usePartLook('frame', selectedNodeName, appearance.frameColor)
 
   return (
     <SelectablePart nodeName="frame" onSelectNode={onSelectNode}>
@@ -68,10 +97,10 @@ function Frame({ selectedNodeName, onSelectNode }: PartProps) {
       >
         <meshPhysicalMaterial
           color={look.color}
-          metalness={0.88}
-          roughness={0.26}
-          clearcoat={0.35}
-          clearcoatRoughness={0.28}
+          metalness={appearance.frameMetalness}
+          roughness={appearance.frameRoughness}
+          clearcoat={0.22}
+          clearcoatRoughness={0.4}
           emissive={look.emissive}
           emissiveIntensity={look.emissiveIntensity}
         />
@@ -111,24 +140,36 @@ function Display({ selectedNodeName, onSelectNode }: PartProps) {
   )
 }
 
-function BackGlass({ internalsOpen }: { internalsOpen: boolean }) {
+function BackGlass({
+  internalsOpen,
+  appearance,
+}: {
+  internalsOpen: boolean
+  appearance: PhoneAppearance
+}) {
   return (
     <RoundedBox
-      args={[PHONE.width - 0.05, PHONE.height - 0.07, 0.006]}
-      radius={0.06}
+      args={[PHONE.width - 0.072, PHONE.height - 0.086, 0.014]}
+      radius={0.062}
       smoothness={4}
-      position={[0, PHONE.centerY, -PHONE.depth / 2 + 0.004]}
+      position={[0, PHONE.centerY, -PHONE.depth / 2 - 0.008]}
+      receiveShadow
     >
       <meshPhysicalMaterial
-        color={BACK_GLASS_COLOR}
-        metalness={0.22}
-        roughness={internalsOpen ? 0.08 : 0.16}
-        clearcoat={1}
-        clearcoatRoughness={0.1}
-        transparent
-        opacity={internalsOpen ? 0.28 : 0.94}
-        transmission={internalsOpen ? 0.22 : 0.04}
-        thickness={0.03}
+        color={appearance.backGlassColor}
+        metalness={internalsOpen ? 0.06 : appearance.backMetalness}
+        roughness={internalsOpen ? 0.06 : appearance.backRoughness}
+        clearcoat={internalsOpen ? 1 : appearance.backClearcoat}
+        clearcoatRoughness={
+          internalsOpen ? 0.06 : appearance.backClearcoatRoughness
+        }
+        reflectivity={0.58}
+        ior={1.5}
+        specularIntensity={0.9}
+        transparent={internalsOpen}
+        opacity={internalsOpen ? 0.22 : 1}
+        transmission={internalsOpen ? 0.26 : 0}
+        thickness={internalsOpen ? 0.03 : 0}
       />
     </RoundedBox>
   )
@@ -185,8 +226,12 @@ function Flash({ selectedNodeName, onSelectNode }: PartProps) {
   )
 }
 
-function ActionButton({ selectedNodeName, onSelectNode }: PartProps) {
-  const look = usePartLook('action-button', selectedNodeName, FRAME_COLOR)
+function ActionButton({
+  selectedNodeName,
+  onSelectNode,
+  color,
+}: ExteriorPartProps) {
+  const look = usePartLook('action-button', selectedNodeName, color)
 
   return (
     <SelectablePart nodeName="action-button" onSelectNode={onSelectNode}>
@@ -205,8 +250,12 @@ function ActionButton({ selectedNodeName, onSelectNode }: PartProps) {
   )
 }
 
-function VolumeButtons({ selectedNodeName, onSelectNode }: PartProps) {
-  const look = usePartLook('volume-buttons', selectedNodeName, FRAME_COLOR)
+function VolumeButtons({
+  selectedNodeName,
+  onSelectNode,
+  color,
+}: ExteriorPartProps) {
+  const look = usePartLook('volume-buttons', selectedNodeName, color)
 
   return (
     <SelectablePart nodeName="volume-buttons" onSelectNode={onSelectNode}>
@@ -237,8 +286,12 @@ function VolumeButtons({ selectedNodeName, onSelectNode }: PartProps) {
   )
 }
 
-function PowerButton({ selectedNodeName, onSelectNode }: PartProps) {
-  const look = usePartLook('power-button', selectedNodeName, FRAME_COLOR)
+function PowerButton({
+  selectedNodeName,
+  onSelectNode,
+  color,
+}: ExteriorPartProps) {
+  const look = usePartLook('power-button', selectedNodeName, color)
 
   return (
     <SelectablePart nodeName="power-button" onSelectNode={onSelectNode}>

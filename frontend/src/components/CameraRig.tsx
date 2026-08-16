@@ -8,6 +8,7 @@ interface CameraRigProps {
   cameraPosition: Position | null
   lookAt: Position | null
   focusNonce: number
+  overviewNonce: number
 }
 
 interface OrbitLike {
@@ -15,34 +16,35 @@ interface OrbitLike {
   update: () => void
 }
 
+function setOverviewGoal(
+  goalPosition: THREE.Vector3,
+  goalTarget: THREE.Vector3,
+) {
+  goalPosition.set(OVERVIEW_CAMERA.x, OVERVIEW_CAMERA.y, OVERVIEW_CAMERA.z)
+  goalTarget.set(OVERVIEW_TARGET.x, OVERVIEW_TARGET.y, OVERVIEW_TARGET.z)
+}
+
 export default function CameraRig({
   cameraPosition,
   lookAt,
   focusNonce,
+  overviewNonce,
 }: CameraRigProps) {
   const { camera, controls } = useThree()
   const goalPosition = useRef(new THREE.Vector3())
   const goalTarget = useRef(new THREE.Vector3())
   const animating = useRef(false)
-
   const overviewApplied = useRef(false)
+  const lastFocusNonce = useRef(0)
+  const lastOverviewNonce = useRef(0)
 
   useEffect(() => {
-    if (focusNonce === 0) {
+    if (focusNonce === 0 && overviewNonce === 0) {
       if (overviewApplied.current) {
         return
       }
 
-      goalPosition.current.set(
-        OVERVIEW_CAMERA.x,
-        OVERVIEW_CAMERA.y,
-        OVERVIEW_CAMERA.z,
-      )
-      goalTarget.current.set(
-        OVERVIEW_TARGET.x,
-        OVERVIEW_TARGET.y,
-        OVERVIEW_TARGET.z,
-      )
+      setOverviewGoal(goalPosition.current, goalTarget.current)
       camera.position.copy(goalPosition.current)
       const orbit = controls as OrbitLike | null
       if (orbit?.target) {
@@ -54,7 +56,24 @@ export default function CameraRig({
       return
     }
 
-    if (!cameraPosition || !lookAt) {
+    if (overviewNonce !== lastOverviewNonce.current) {
+      lastOverviewNonce.current = overviewNonce
+
+      if (overviewNonce > 0) {
+        setOverviewGoal(goalPosition.current, goalTarget.current)
+        overviewApplied.current = true
+        animating.current = true
+        return
+      }
+    }
+
+    if (focusNonce === lastFocusNonce.current) {
+      return
+    }
+
+    lastFocusNonce.current = focusNonce
+
+    if (!cameraPosition || !lookAt || focusNonce === 0) {
       return
     }
 
@@ -62,7 +81,7 @@ export default function CameraRig({
     goalPosition.current.set(cameraPosition.x, cameraPosition.y, cameraPosition.z)
     goalTarget.current.set(lookAt.x, lookAt.y, lookAt.z)
     animating.current = true
-  }, [camera, cameraPosition, controls, lookAt, focusNonce])
+  }, [camera, cameraPosition, controls, lookAt, focusNonce, overviewNonce])
 
   useFrame((_, delta) => {
     if (!animating.current) {

@@ -36,6 +36,13 @@ interface HotspotProps {
 function Hotspot({ feature, selected, onSelect }: HotspotProps) {
   const [hovered, setHovered] = useState(false)
   const { x, y, z } = feature.position
+  const pinClass = [
+    'hotspot-pin',
+    selected ? 'selected' : '',
+    hovered ? 'hovered' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <Html
@@ -49,7 +56,7 @@ function Hotspot({ feature, selected, onSelect }: HotspotProps) {
       <div className="hotspot">
         <button
           type="button"
-          className={selected ? 'hotspot-pin selected' : 'hotspot-pin'}
+          className={pinClass}
           aria-label={`Focus ${feature.name}`}
           aria-pressed={selected}
           onPointerDown={(event) => {
@@ -61,10 +68,12 @@ function Hotspot({ feature, selected, onSelect }: HotspotProps) {
           }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-        />
-        {(selected || hovered) && (
-          <span className="hotspot-label">{feature.name}</span>
-        )}
+          onFocus={() => setHovered(true)}
+          onBlur={() => setHovered(false)}
+        >
+          <span className="hotspot-core" aria-hidden="true" />
+        </button>
+        {hovered && <span className="hotspot-label">{feature.name}</span>}
       </div>
     </Html>
   )
