@@ -71,11 +71,25 @@
   touch-action: none;
 }
 
-.reset-view-button {
+.viewer-controls {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  pointer-events: none;
+}
+
+.viewer-controls > button {
+  pointer-events: auto;
+}
+
+.reset-view-button,
+.explode-view-button {
   border: 0;
   border-radius: 999px;
   background: #111827;
@@ -89,15 +103,28 @@
   box-shadow: 0 2px 10px rgba(17, 24, 39, 0.2);
 }
 
-.reset-view-button:hover {
+.reset-view-button:hover,
+.explode-view-button:hover {
   background: #1f2937;
 }
 
-.reset-view-button:focus {
+.explode-view-button[aria-pressed='true'] {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 2px 10px rgba(17, 24, 39, 0.16);
+}
+
+.explode-view-button[aria-pressed='true']:hover {
+  background: #f3f4f6;
+}
+
+.reset-view-button:focus,
+.explode-view-button:focus {
   outline: none;
 }
 
-.reset-view-button:focus-visible {
+.reset-view-button:focus-visible,
+.explode-view-button:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
@@ -369,7 +396,32 @@
     0 0 14px rgba(255, 255, 255, 0.7);
 }
 
-.hotspot-pin.selected .hotspot-core {
+.hotspot-pin.exploded {
+  width: 28px;
+  height: 28px;
+}
+
+.hotspot-pin.exploded .hotspot-core {
+  width: 7px;
+  height: 7px;
+  box-shadow:
+    0 0 0 1px rgba(17, 24, 39, 0.18),
+    0 0 0 3px rgba(255, 255, 255, 0.22),
+    0 0 8px rgba(255, 255, 255, 0.32);
+}
+
+.hotspot-pin.exploded.hovered .hotspot-core,
+.hotspot-pin.exploded:hover .hotspot-core {
+  width: 9px;
+  height: 9px;
+  box-shadow:
+    0 0 0 1px rgba(17, 24, 39, 0.2),
+    0 0 0 4px rgba(255, 255, 255, 0.38),
+    0 0 12px rgba(255, 255, 255, 0.58);
+}
+
+.hotspot-pin.selected .hotspot-core,
+.hotspot-pin.exploded.selected .hotspot-core {
   width: 11px;
   height: 11px;
   background: #ffffff;
@@ -467,7 +519,7 @@
     height: min(68vh, 620px);
   }
 
-  .reset-view-button {
+  .viewer-controls {
     top: 12px;
     right: 12px;
   }
@@ -496,9 +548,13 @@
     height: min(60vh, 520px);
   }
 
-  .reset-view-button {
+  .viewer-controls {
     top: 10px;
     right: 10px;
+  }
+
+  .reset-view-button,
+  .explode-view-button {
     padding: 7px 12px;
     font-size: 12px;
   }

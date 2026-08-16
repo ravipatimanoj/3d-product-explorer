@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { ContactShadows, OrbitControls } from '@react-three/drei'
+import { useState } from 'react'
 import * as THREE from 'three'
 import CameraRig from './CameraRig'
 import {
@@ -10,12 +11,14 @@ import {
 } from './cameraOverview'
 import FeatureHotspots from './FeatureHotspots'
 import SmartphoneModel from './SmartphoneModel'
+import { cameraCommand, explodedMode, flashLit } from './explodedView'
 import type { Product, ProductFeature } from '../types/product'
 
 interface ProductViewerProps {
   product: Product
   selectedFeature: ProductFeature | null
   selectedColor: string
+  flashOn: boolean
   onSelectFeature: (feature: ProductFeature) => void
   onResetView: () => void
   focusNonce: number
@@ -26,13 +29,31 @@ export default function ProductViewer({
   product,
   selectedFeature,
   selectedColor,
+  flashOn,
   onSelectFeature,
   onResetView,
   focusNonce,
   overviewNonce,
 }: ProductViewerProps) {
+  const [exploded, setExploded] = useState(false)
   const selectedNodeName = selectedFeature?.modelNodeName ?? null
-  const focus = resolveFeatureFocus(selectedFeature)
+  const focus = resolveFeatureFocus(selectedFeature, exploded)
+
+  explodedMode.current = exploded
+  flashLit.current = flashOn
+  cameraCommand.focusNonce = focusNonce
+  cameraCommand.overviewNonce = overviewNonce
+  cameraCommand.featureId = selectedFeature?.id ?? null
+  cameraCommand.cameraPosition = focus.cameraPosition
+  cameraCommand.lookAt = focus.lookAt
+
+  const handleToggleExploded = () => {
+    setExploded((current) => {
+      const next = !current
+      explodedMode.current = next
+      return next
+    })
+  }
 
   const handleSelectNode = (nodeName: string) => {
     const feature = product.features.find(
@@ -103,15 +124,11 @@ export default function ProductViewer({
         <FeatureHotspots
           features={product.features}
           selectedFeatureId={selectedFeature?.id ?? null}
+          exploded={exploded}
           onSelectFeature={onSelectFeature}
         />
 
-        <CameraRig
-          cameraPosition={focus.cameraPosition}
-          lookAt={focus.lookAt}
-          focusNonce={focusNonce}
-          overviewNonce={overviewNonce}
-        />
+        <CameraRig />
 
         <ContactShadows
           position={[0, -1.04, 0]}
@@ -131,16 +148,26 @@ export default function ProductViewer({
           dampingFactor={0.08}
           target={[OVERVIEW_TARGET.x, OVERVIEW_TARGET.y, OVERVIEW_TARGET.z]}
           minDistance={2.1}
-          maxDistance={12}
+          maxDistance={14}
         />
       </Canvas>
-      <button
-        type="button"
-        className="reset-view-button"
-        onClick={onResetView}
-      >
-        View Full Phone
-      </button>
+      <div className="viewer-controls">
+        <button
+          type="button"
+          className="explode-view-button"
+          aria-pressed={exploded}
+          onClick={handleToggleExploded}
+        >
+          {exploded ? 'Assembled View' : 'Exploded View'}
+        </button>
+        <button
+          type="button"
+          className="reset-view-button"
+          onClick={onResetView}
+        >
+          View Full Phone
+        </button>
+      </div>
     </div>
   )
 }

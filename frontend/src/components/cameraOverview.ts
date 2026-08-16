@@ -1,4 +1,8 @@
 import type { Position, ProductFeature } from '../types/product'
+import {
+  offsetExplodedPosition,
+  resolveExplodedCamera,
+} from './explodedView'
 
 export const OVERVIEW_CAMERA = { x: 1.55, y: 0.38, z: 5.15 }
 export const OVERVIEW_TARGET = { x: 0, y: 0.12, z: 0 }
@@ -18,7 +22,10 @@ const FEATURE_FOCUS_OVERRIDES: Record<
   },
 }
 
-export function resolveFeatureFocus(feature: ProductFeature | null): {
+export function resolveFeatureFocus(
+  feature: ProductFeature | null,
+  exploded = false,
+): {
   cameraPosition: Position | null
   lookAt: Position | null
 } {
@@ -30,15 +37,20 @@ export function resolveFeatureFocus(feature: ProductFeature | null): {
     FEATURE_FOCUS_OVERRIDES[feature.modelNodeName] ??
     FEATURE_FOCUS_OVERRIDES[feature.id]
 
-  if (override) {
-    return {
-      cameraPosition: override.camera,
-      lookAt: override.lookAt,
-    }
+  const cameraPosition = override?.camera ?? feature.cameraPosition
+  const lookAt = override?.lookAt ?? feature.position
+
+  if (!exploded) {
+    return { cameraPosition, lookAt }
   }
 
+  const explodedLookAt = offsetExplodedPosition(lookAt, feature.modelNodeName)
   return {
-    cameraPosition: feature.cameraPosition,
-    lookAt: feature.position,
+    cameraPosition: resolveExplodedCamera(
+      feature.modelNodeName,
+      cameraPosition,
+      explodedLookAt,
+    ),
+    lookAt: explodedLookAt,
   }
 }

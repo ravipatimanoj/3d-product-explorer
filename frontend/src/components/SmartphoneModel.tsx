@@ -1,11 +1,13 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useRef, type ReactNode } from 'react'
 import { Outlines, RoundedBox } from '@react-three/drei'
-import type { ThreeEvent } from '@react-three/fiber'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import {
   getPhoneAppearance,
   type PhoneAppearance,
 } from '../phoneAppearance'
+import ExplodedLayer from './ExplodedLayer'
+import { EXPLODED_OFFSETS, flashLit } from './explodedView'
 
 const PHONE = {
   width: 0.86,
@@ -35,36 +37,74 @@ export default function SmartphoneModel({
     selectedNodeName === 'battery' || selectedNodeName === 'processor'
 
   return (
-    <group>
-      <Frame
-        selectedNodeName={selectedNodeName}
-        onSelectNode={onSelectNode}
-        appearance={appearance}
-      />
-      <Display selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <BackGlass internalsOpen={internalsOpen} appearance={appearance} />
-      <CameraModule selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <Flash selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <ActionButton
-        selectedNodeName={selectedNodeName}
-        onSelectNode={onSelectNode}
-        color={appearance.frameColor}
-      />
-      <VolumeButtons
-        selectedNodeName={selectedNodeName}
-        onSelectNode={onSelectNode}
-        color={appearance.frameColor}
-      />
-      <PowerButton
-        selectedNodeName={selectedNodeName}
-        onSelectNode={onSelectNode}
-        color={appearance.frameColor}
-      />
-      <UsbCPort selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <Speaker selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <Microphone selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <Battery selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
-      <Processor selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+    <group name="smartphone">
+      <ExplodedLayer
+        name="layer-frame"
+        offset={EXPLODED_OFFSETS.frame}
+      >
+        <Frame
+          selectedNodeName={selectedNodeName}
+          onSelectNode={onSelectNode}
+          appearance={appearance}
+        />
+        <ActionButton
+          selectedNodeName={selectedNodeName}
+          onSelectNode={onSelectNode}
+          color={appearance.frameColor}
+        />
+        <VolumeButtons
+          selectedNodeName={selectedNodeName}
+          onSelectNode={onSelectNode}
+          color={appearance.frameColor}
+        />
+        <PowerButton
+          selectedNodeName={selectedNodeName}
+          onSelectNode={onSelectNode}
+          color={appearance.frameColor}
+        />
+        <UsbCPort selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+        <Speaker selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+        <Microphone selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+      </ExplodedLayer>
+
+      <ExplodedLayer
+        name="layer-display"
+        offset={EXPLODED_OFFSETS.display}
+      >
+        <Display selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+      </ExplodedLayer>
+
+      <ExplodedLayer
+        name="layer-internals"
+        offset={EXPLODED_OFFSETS.internals}
+      >
+        <Processor selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+      </ExplodedLayer>
+
+      <ExplodedLayer
+        name="layer-battery"
+        offset={EXPLODED_OFFSETS.battery}
+      >
+        <Battery selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+      </ExplodedLayer>
+
+      <ExplodedLayer
+        name="layer-back-glass"
+        offset={EXPLODED_OFFSETS.backGlass}
+      >
+        <BackGlass internalsOpen={internalsOpen} appearance={appearance} />
+      </ExplodedLayer>
+
+      <ExplodedLayer
+        name="layer-camera"
+        offset={EXPLODED_OFFSETS.camera}
+      >
+        <CameraModule selectedNodeName={selectedNodeName} onSelectNode={onSelectNode} />
+        <Flash
+          selectedNodeName={selectedNodeName}
+          onSelectNode={onSelectNode}
+        />
+      </ExplodedLayer>
     </group>
   )
 }
@@ -230,6 +270,53 @@ function CameraModule({ selectedNodeName, onSelectNode }: PartProps) {
 
 function Flash({ selectedNodeName, onSelectNode }: PartProps) {
   const look = usePartLook('flash', selectedNodeName, '#f4efe4')
+  const ledMat = useRef<THREE.MeshStandardMaterial>(null)
+  const onMat = useRef<THREE.MeshBasicMaterial>(null)
+  const glowMat = useRef<THREE.MeshBasicMaterial>(null)
+  const lightRef = useRef<THREE.PointLight>(null)
+  const pulse = useRef(0)
+  const wasOn = useRef(false)
+
+  useFrame((_, delta) => {
+    if (flashLit.current && !wasOn.current) {
+      pulse.current = 0
+    }
+    wasOn.current = flashLit.current
+
+    if (flashLit.current) {
+      pulse.current = Math.min(1, pulse.current + delta * 5.2)
+    } else {
+      pulse.current = Math.max(0, pulse.current - delta * 6.5)
+    }
+
+    const attack = pulse.current
+    const overshoot = attack > 0 && attack < 1 ? Math.sin(attack * Math.PI) * 0.55 : 0
+    const onAmount = Math.min(1.4, attack + overshoot)
+
+    if (ledMat.current) {
+      if (onAmount > 0.04) {
+        ledMat.current.color.set('#fff8e6')
+        ledMat.current.emissive.set('#fff4c4')
+        ledMat.current.emissiveIntensity = 3.4 + onAmount * 3.2
+      } else {
+        ledMat.current.color.set(look.color)
+        ledMat.current.emissive.set(look.selected ? '#fff3c4' : '#f7f1d8')
+        ledMat.current.emissiveIntensity = look.selected ? 1.4 : 0.35
+      }
+    }
+
+    if (onMat.current) {
+      onMat.current.opacity = Math.min(1, onAmount * 1.05)
+    }
+
+    if (glowMat.current) {
+      glowMat.current.opacity = onAmount * 0.55
+    }
+
+    if (lightRef.current) {
+      lightRef.current.intensity = onAmount * 3.1
+    }
+  })
 
   return (
     <SelectablePart nodeName="flash" onSelectNode={onSelectNode}>
@@ -241,14 +328,46 @@ function Flash({ selectedNodeName, onSelectNode }: PartProps) {
         <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.004]}>
           <cylinderGeometry args={[0.016, 0.016, 0.01, 28]} />
           <meshStandardMaterial
+            ref={ledMat}
             color={look.color}
             emissive={look.selected ? '#fff3c4' : '#f7f1d8'}
             emissiveIntensity={look.selected ? 1.4 : 0.35}
             metalness={0.2}
             roughness={0.18}
+            toneMapped={false}
           />
           <SelectionOutline selected={look.selected} />
         </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.009]}>
+          <cylinderGeometry args={[0.022, 0.022, 0.008, 28]} />
+          <meshBasicMaterial
+            ref={onMat}
+            color="#fff6c8"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh position={[0, 0, -0.022]}>
+          <sphereGeometry args={[0.1, 20, 20]} />
+          <meshBasicMaterial
+            ref={glowMat}
+            color="#fff3c2"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        <pointLight
+          ref={lightRef}
+          color="#fff1b8"
+          intensity={0}
+          distance={1.6}
+          decay={2}
+          position={[0, 0, -0.05]}
+        />
       </group>
     </SelectablePart>
   )

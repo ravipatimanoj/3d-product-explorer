@@ -29,10 +29,6 @@ export function useProduct(): UseProductResult {
       const productData = await getProduct(PRODUCT_ID)
 
       setProduct(productData)
-
-      if (productData.features.length > 0) {
-        setSelectedFeature(productData.features[0])
-      }
     } catch (err) {
       setError(
         err instanceof Error

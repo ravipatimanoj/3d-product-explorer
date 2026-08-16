@@ -17,6 +17,7 @@ function App() {
   const [focusNonce, setFocusNonce] = useState(0)
   const [overviewNonce, setOverviewNonce] = useState(0)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
+  const [flashOn, setFlashOn] = useState(false)
 
   useEffect(() => {
     if (!product) {
@@ -31,6 +32,15 @@ function App() {
   }, [product])
 
   const handleSelectFeature = (feature: ProductFeature) => {
+    if (
+      feature.modelNodeName === 'flash' &&
+      selectedFeature?.id === feature.id
+    ) {
+      setFlashOn((on) => !on)
+      return
+    }
+
+    setFlashOn(feature.modelNodeName === 'flash')
     selectFeature(feature)
     setFocusNonce((value) => value + 1)
   }
@@ -111,6 +121,7 @@ function App() {
               product={product}
               selectedFeature={selectedFeature}
               selectedColor={selectedColor ?? product.defaultColor}
+              flashOn={flashOn}
               onSelectFeature={handleSelectFeature}
               onResetView={handleResetView}
               focusNonce={focusNonce}

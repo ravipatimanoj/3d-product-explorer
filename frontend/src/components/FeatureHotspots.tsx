@@ -1,28 +1,44 @@
 import { useState } from 'react'
 import { Html } from '@react-three/drei'
 import type { ProductFeature } from '../types/product'
+import ExplodedLayer from './ExplodedLayer'
+import { EXPLODED_HOTSPOT_NODES, getExplodedOffset } from './explodedView'
 
 interface FeatureHotspotsProps {
   features: ProductFeature[]
   selectedFeatureId: string | null
+  exploded: boolean
   onSelectFeature: (feature: ProductFeature) => void
 }
 
 export default function FeatureHotspots({
   features,
   selectedFeatureId,
+  exploded,
   onSelectFeature,
 }: FeatureHotspotsProps) {
   return (
     <group>
-      {features.map((feature) => (
-        <Hotspot
-          key={feature.id}
-          feature={feature}
-          selected={selectedFeatureId === feature.id}
-          onSelect={onSelectFeature}
-        />
-      ))}
+      {features.map((feature) => {
+        const selected = selectedFeatureId === feature.id
+        if (exploded && !EXPLODED_HOTSPOT_NODES.has(feature.modelNodeName)) {
+          return null
+        }
+
+        return (
+          <ExplodedLayer
+            key={feature.id}
+            offset={getExplodedOffset(feature.modelNodeName)}
+          >
+            <Hotspot
+              feature={feature}
+              selected={selected}
+              exploded={exploded}
+              onSelect={onSelectFeature}
+            />
+          </ExplodedLayer>
+        )
+      })}
     </group>
   )
 }
@@ -30,14 +46,16 @@ export default function FeatureHotspots({
 interface HotspotProps {
   feature: ProductFeature
   selected: boolean
+  exploded: boolean
   onSelect: (feature: ProductFeature) => void
 }
 
-function Hotspot({ feature, selected, onSelect }: HotspotProps) {
+function Hotspot({ feature, selected, exploded, onSelect }: HotspotProps) {
   const [hovered, setHovered] = useState(false)
   const { x, y, z } = feature.position
   const pinClass = [
     'hotspot-pin',
+    exploded ? 'exploded' : '',
     selected ? 'selected' : '',
     hovered ? 'hovered' : '',
   ]
