@@ -47,21 +47,35 @@ export default function FeaturePanel({
         </div>
       </div>
 
-      {selectedFeature && (
-        <div className="selected-feature">
-          <p className="selected-feature-category">{selectedFeature.category}</p>
+      {selectedFeature ? (
+        <div className="selected-feature" key={selectedFeature.id}>
           <h3>{selectedFeature.name}</h3>
-          <p>{selectedFeature.description}</p>
+          <p className="selected-feature-category">{selectedFeature.category}</p>
+          <p className="selected-feature-description">
+            {selectedFeature.description}
+          </p>
 
-          <h4>Specifications</h4>
-          <ul>
-            {selectedFeature.specifications.map((specification) => (
-              <li key={specification.name}>
-                <strong>{specification.name}:</strong> {specification.value}
-              </li>
-            ))}
-          </ul>
+          {selectedFeature.specifications.length > 0 && (
+            <>
+              <h4>Specifications</h4>
+              <dl className="selected-feature-specs">
+                {selectedFeature.specifications.map((specification) => (
+                  <div
+                    key={specification.name}
+                    className="selected-feature-spec"
+                  >
+                    <dt>{specification.name}</dt>
+                    <dd>{specification.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          )}
         </div>
+      ) : (
+        <p className="selected-feature-placeholder">
+          Select a component to inspect its details.
+        </p>
       )}
     </section>
   )

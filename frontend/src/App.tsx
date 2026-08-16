@@ -61,9 +61,11 @@ function App() {
           <p>Explore the product and discover its features</p>
         </header>
         <main className="main-content main-content--status">
-          <div className="status-card loading">
-            <h2>Loading product...</h2>
-            <p>Connecting to the product service.</p>
+          <div className="status-card loading" role="status" aria-live="polite">
+            <p className="status-kicker">Product Explorer</p>
+            <h2>Loading</h2>
+            <p>Preparing 3D model</p>
+            <div className="loading-track" aria-hidden="true" />
           </div>
         </main>
       </div>

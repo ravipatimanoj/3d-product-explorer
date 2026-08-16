@@ -7,7 +7,12 @@ import {
   type PhoneAppearance,
 } from '../phoneAppearance'
 import ExplodedLayer from './ExplodedLayer'
-import { EXPLODED_OFFSETS, flashLit } from './explodedView'
+import {
+  EXPLODED_HOTSPOT_NODES,
+  EXPLODED_OFFSETS,
+  explodedMode,
+  flashLit,
+} from './explodedView'
 
 const PHONE = {
   width: 0.86,
@@ -651,16 +656,28 @@ function SelectablePart({
   children: ReactNode
 }) {
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    if (explodedMode.current && !EXPLODED_HOTSPOT_NODES.has(nodeName)) {
+      return
+    }
+
     event.stopPropagation()
     onSelectNode(nodeName)
   }
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
+    if (explodedMode.current && !EXPLODED_HOTSPOT_NODES.has(nodeName)) {
+      return
+    }
+
     event.stopPropagation()
     document.body.style.cursor = 'pointer'
   }
 
   const handlePointerOut = () => {
+    if (explodedMode.current && !EXPLODED_HOTSPOT_NODES.has(nodeName)) {
+      return
+    }
+
     document.body.style.cursor = 'auto'
   }
 
