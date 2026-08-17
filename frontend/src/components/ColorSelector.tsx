@@ -1,6 +1,20 @@
 import { useRef, type KeyboardEvent } from 'react'
 import { getPhoneAppearance } from '../phoneAppearance'
 
+const GENERIC_SWATCHES: Record<string, string> = {
+  Graphite: '#4b5563',
+  Midnight: '#1f2937',
+  Ivory: '#f4efe4',
+  'Stainless Steel': '#c9d0d6',
+  'Black Stainless': '#2c3036',
+  White: '#f8fafc',
+  Slate: '#64748b',
+}
+
+function getColorSwatch(colorName: string): string {
+  return GENERIC_SWATCHES[colorName] ?? getPhoneAppearance(colorName).swatch
+}
+
 interface ColorSelectorProps {
   colors: string[]
   selectedColor: string
@@ -61,8 +75,6 @@ export default function ColorSelector({
       >
         {colors.map((color) => {
           const selected = color === selectedColor
-          const appearance = getPhoneAppearance(color)
-
           return (
             <button
               key={color}
@@ -83,7 +95,7 @@ export default function ColorSelector({
             >
               <span
                 className="color-swatch"
-                style={{ backgroundColor: appearance.swatch }}
+                style={{ backgroundColor: getColorSwatch(color) }}
                 aria-hidden="true"
               />
               <span className="color-name">{color}</span>

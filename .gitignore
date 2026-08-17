@@ -23,9 +23,10 @@ backend/target/
 
 # IDE
 .idea/
-.vscode/
+.vscode/*
+!.vscode/launch.json
 *.iml
 
 # OS / temporary files
 .DS_Store
-Thumbs.db
+Thumbs.db.env

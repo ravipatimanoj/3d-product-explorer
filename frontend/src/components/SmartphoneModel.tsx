@@ -51,6 +51,7 @@ export default function SmartphoneModel({
           selectedNodeName={selectedNodeName}
           onSelectNode={onSelectNode}
           appearance={appearance}
+          internalsOpen={internalsOpen}
         />
         <ActionButton
           selectedNodeName={selectedNodeName}
@@ -127,7 +128,8 @@ function Frame({
   selectedNodeName,
   onSelectNode,
   appearance,
-}: PartProps & { appearance: PhoneAppearance }) {
+  internalsOpen,
+}: PartProps & { appearance: PhoneAppearance; internalsOpen: boolean }) {
   const look = usePartLook('frame', selectedNodeName, appearance.frameColor)
 
   return (
@@ -142,12 +144,15 @@ function Frame({
       >
         <meshPhysicalMaterial
           color={look.color}
-          metalness={appearance.frameMetalness}
-          roughness={appearance.frameRoughness}
+          metalness={internalsOpen ? 0.12 : appearance.frameMetalness}
+          roughness={internalsOpen ? 0.28 : appearance.frameRoughness}
           clearcoat={0.22}
           clearcoatRoughness={0.4}
           emissive={look.emissive}
           emissiveIntensity={look.emissiveIntensity}
+          transparent={internalsOpen}
+          opacity={internalsOpen ? 0.16 : 1}
+          depthWrite={!internalsOpen}
         />
         <SelectionOutline selected={look.selected} />
       </RoundedBox>
@@ -212,9 +217,10 @@ function BackGlass({
         ior={1.5}
         specularIntensity={0.9}
         transparent={internalsOpen}
-        opacity={internalsOpen ? 0.22 : 1}
-        transmission={internalsOpen ? 0.26 : 0}
-        thickness={internalsOpen ? 0.03 : 0}
+        opacity={internalsOpen ? 0.2 : 1}
+        transmission={0}
+        thickness={0}
+        depthWrite={!internalsOpen}
       />
     </RoundedBox>
   )

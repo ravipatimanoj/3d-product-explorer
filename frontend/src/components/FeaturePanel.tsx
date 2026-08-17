@@ -1,10 +1,12 @@
 import ColorSelector from './ColorSelector'
+import type { Product3DCapabilities } from '../product3DCapabilities'
 import type { Product, ProductFeature } from '../types/product'
 
 interface FeaturePanelProps {
   product: Product
   selectedFeature: ProductFeature | null
   selectedColor: string
+  capabilities: Product3DCapabilities
   onSelectFeature: (feature: ProductFeature) => void
   onSelectColor: (color: string) => void
 }
@@ -13,11 +15,13 @@ export default function FeaturePanel({
   product,
   selectedFeature,
   selectedColor,
+  capabilities,
   onSelectFeature,
   onSelectColor,
 }: FeaturePanelProps) {
   return (
     <section className="product-info">
+      <p className="product-category">{product.category}</p>
       <h2>{product.name}</h2>
       <p>{product.description}</p>
 
@@ -27,25 +31,27 @@ export default function FeaturePanel({
         onSelectColor={onSelectColor}
       />
 
-      <div className="feature-card">
-        <h3>Product Features</h3>
-        <div className="feature-list">
-          {product.features.map((feature) => (
-            <button
-              key={feature.id}
-              type="button"
-              className={
-                selectedFeature?.id === feature.id
-                  ? 'feature-button selected'
-                  : 'feature-button'
-              }
-              onClick={() => onSelectFeature(feature)}
-            >
-              {feature.name}
-            </button>
-          ))}
+      {capabilities.featureFocus ? (
+        <div className="feature-card">
+          <h3>Product Features</h3>
+          <div className="feature-list">
+            {product.features.map((feature) => (
+              <button
+                key={feature.id}
+                type="button"
+                className={
+                  selectedFeature?.id === feature.id
+                    ? 'feature-button selected'
+                    : 'feature-button'
+                }
+                onClick={() => onSelectFeature(feature)}
+              >
+                {feature.name}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {selectedFeature ? (
         <div className="selected-feature" key={selectedFeature.id}>
@@ -74,7 +80,9 @@ export default function FeaturePanel({
         </div>
       ) : (
         <p className="selected-feature-placeholder">
-          Select a component to inspect its details.
+          {capabilities.featureFocus
+            ? 'Select a component to inspect its details.'
+            : '3D exploration for this product is coming soon.'}
         </p>
       )}
     </section>

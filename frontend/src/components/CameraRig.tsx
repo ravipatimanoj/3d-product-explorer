@@ -6,6 +6,7 @@ import { EXPLODED_CAMERA, EXPLODED_TARGET, cameraCommand, explodedMode } from '.
 
 interface OrbitLike {
   target: THREE.Vector3
+  minDistance?: number
   update: () => void
 }
 
@@ -60,12 +61,32 @@ export default function CameraRig() {
 
     if (explodedMode.current !== lastExploded.current) {
       lastExploded.current = explodedMode.current
-      setOverviewGoal(
-        goalPosition.current,
-        goalTarget.current,
-        explodedMode.current,
-      )
-      overviewApplied.current = true
+      if (
+        cameraCommand.featureId &&
+        cameraCommand.cameraPosition &&
+        cameraCommand.lookAt
+      ) {
+        lastFocusNonce.current = cameraCommand.focusNonce
+        lastFeatureId.current = cameraCommand.featureId
+        overviewApplied.current = false
+        goalPosition.current.set(
+          cameraCommand.cameraPosition.x,
+          cameraCommand.cameraPosition.y,
+          cameraCommand.cameraPosition.z,
+        )
+        goalTarget.current.set(
+          cameraCommand.lookAt.x,
+          cameraCommand.lookAt.y,
+          cameraCommand.lookAt.z,
+        )
+      } else {
+        setOverviewGoal(
+          goalPosition.current,
+          goalTarget.current,
+          explodedMode.current,
+        )
+        overviewApplied.current = true
+      }
       animating.current = true
       skipFeatureFocus = true
     }
@@ -123,7 +144,13 @@ export default function CameraRig() {
     const orbit = controls as OrbitLike | null
     if (orbit?.target) {
       orbit.target.lerp(goalTarget.current, step)
+      if (typeof orbit.minDistance === 'number') {
+        orbit.minDistance = Math.min(orbit.minDistance, 0.35)
+      }
+      const nextPosition = camera.position.clone()
       orbit.update()
+      camera.position.copy(nextPosition)
+      camera.lookAt(orbit.target)
     } else {
       camera.lookAt(goalTarget.current)
     }

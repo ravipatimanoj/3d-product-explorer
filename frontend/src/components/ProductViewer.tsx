@@ -1,6 +1,5 @@
 import { Canvas } from '@react-three/fiber'
 import { ContactShadows, OrbitControls } from '@react-three/drei'
-import { useState } from 'react'
 import * as THREE from 'three'
 import CameraRig from './CameraRig'
 import {
@@ -9,9 +8,11 @@ import {
   OVERVIEW_TARGET,
   resolveFeatureFocus,
 } from './cameraOverview'
-import FeatureHotspots from './FeatureHotspots'
-import SmartphoneModel from './SmartphoneModel'
+import Product3DRenderer, {
+  ProductModelPlaceholder,
+} from './Product3DRenderer'
 import { cameraCommand, explodedMode, flashLit } from './explodedView'
+import { getProduct3DCapabilities } from '../product3DCapabilities'
 import type { Product, ProductFeature } from '../types/product'
 
 interface ProductViewerProps {
@@ -19,7 +20,9 @@ interface ProductViewerProps {
   selectedFeature: ProductFeature | null
   selectedColor: string
   flashOn: boolean
+  exploded: boolean
   onSelectFeature: (feature: ProductFeature) => void
+  onExplodedChange: (exploded: boolean) => void
   onResetView: () => void
   focusNonce: number
   overviewNonce: number
@@ -30,29 +33,34 @@ export default function ProductViewer({
   selectedFeature,
   selectedColor,
   flashOn,
+  exploded,
   onSelectFeature,
+  onExplodedChange,
   onResetView,
   focusNonce,
   overviewNonce,
 }: ProductViewerProps) {
-  const [exploded, setExploded] = useState(false)
+  const capabilities = getProduct3DCapabilities(product.id)
   const selectedNodeName = selectedFeature?.modelNodeName ?? null
-  const focus = resolveFeatureFocus(selectedFeature, exploded)
+  const focus = resolveFeatureFocus(
+    capabilities.featureFocus ? selectedFeature : null,
+    capabilities.explodedView && exploded,
+  )
 
-  explodedMode.current = exploded
-  flashLit.current = flashOn
-  cameraCommand.focusNonce = focusNonce
+  explodedMode.current = capabilities.explodedView && exploded
+  flashLit.current = capabilities.flash && flashOn
+  cameraCommand.focusNonce = capabilities.featureFocus ? focusNonce : 0
   cameraCommand.overviewNonce = overviewNonce
-  cameraCommand.featureId = selectedFeature?.id ?? null
-  cameraCommand.cameraPosition = focus.cameraPosition
-  cameraCommand.lookAt = focus.lookAt
+  cameraCommand.featureId = capabilities.featureFocus
+    ? selectedFeature?.id ?? null
+    : null
+  cameraCommand.cameraPosition = capabilities.featureFocus
+    ? focus.cameraPosition
+    : null
+  cameraCommand.lookAt = capabilities.featureFocus ? focus.lookAt : null
 
   const handleToggleExploded = () => {
-    setExploded((current) => {
-      const next = !current
-      explodedMode.current = next
-      return next
-    })
+    onExplodedChange(!exploded)
   }
 
   const handleSelectNode = (nodeName: string) => {
@@ -81,29 +89,29 @@ export default function ProductViewer({
       >
         <color attach="background" args={['#d7dee6']} />
 
-        <hemisphereLight args={['#f7f9fb', '#c5ced8', 0.9]} />
-        <ambientLight intensity={0.62} />
+        <hemisphereLight args={['#f7f9fb', '#c5ced8', 0.82]} />
+        <ambientLight intensity={0.48} />
         <directionalLight
           position={[4.2, 7.2, 5]}
-          intensity={1.45}
+          intensity={1.52}
           castShadow
           shadow-mapSize={[1024, 1024]}
         />
         <directionalLight
           position={[-5, 3.2, 2.4]}
-          intensity={0.62}
+          intensity={0.58}
           color="#ffffff"
         />
         <directionalLight
           position={[1.8, 2.4, -5.5]}
-          intensity={1.45}
+          intensity={1.28}
           color="#e7eef6"
         />
         <spotLight
           position={[-2.2, 5.4, 3.2]}
           angle={0.5}
           penumbra={0.9}
-          intensity={0.45}
+          intensity={0.42}
         />
 
         <mesh
@@ -115,16 +123,13 @@ export default function ProductViewer({
           <meshStandardMaterial color="#c5cdd6" roughness={0.92} metalness={0} />
         </mesh>
 
-        <SmartphoneModel
+        <Product3DRenderer
+          product={product}
           selectedNodeName={selectedNodeName}
           selectedColor={selectedColor}
-          onSelectNode={handleSelectNode}
-        />
-
-        <FeatureHotspots
-          features={product.features}
           selectedFeatureId={selectedFeature?.id ?? null}
           exploded={exploded}
+          onSelectNode={handleSelectNode}
           onSelectFeature={onSelectFeature}
         />
 
@@ -132,9 +137,9 @@ export default function ProductViewer({
 
         <ContactShadows
           position={[0, -1.04, 0]}
-          opacity={0.28}
-          scale={8}
-          blur={2.8}
+          opacity={0.34}
+          scale={7.2}
+          blur={2.6}
           far={4}
           color="#6b7280"
         />
@@ -147,27 +152,35 @@ export default function ProductViewer({
           enableDamping
           dampingFactor={0.08}
           target={[OVERVIEW_TARGET.x, OVERVIEW_TARGET.y, OVERVIEW_TARGET.z]}
-          minDistance={2.1}
+          minDistance={0.35}
           maxDistance={14}
         />
       </Canvas>
-      <div className="viewer-controls">
-        <button
-          type="button"
-          className="explode-view-button"
-          aria-pressed={exploded}
-          onClick={handleToggleExploded}
-        >
-          {exploded ? 'Assembled View' : 'Exploded View'}
-        </button>
-        <button
-          type="button"
-          className="reset-view-button"
-          onClick={onResetView}
-        >
-          View Full Phone
-        </button>
-      </div>
+      {capabilities.interactiveModel ? (
+        <div className="viewer-controls">
+          {capabilities.explodedView ? (
+            <button
+              type="button"
+              className="explode-view-button"
+              aria-pressed={exploded}
+              onClick={handleToggleExploded}
+            >
+              {exploded ? 'Assembled View' : 'Exploded View'}
+            </button>
+          ) : null}
+          {capabilities.featureFocus ? (
+            <button
+              type="button"
+              className="reset-view-button"
+              onClick={onResetView}
+            >
+              View Full Phone
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <ProductModelPlaceholder category={product.category} />
+      )}
     </div>
   )
 }

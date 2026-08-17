@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Html } from '@react-three/drei'
 import type { ProductFeature } from '../types/product'
+import { resolveHotspotPosition } from './cameraOverview'
 import ExplodedLayer from './ExplodedLayer'
 import { EXPLODED_HOTSPOT_NODES, getExplodedOffset } from './explodedView'
 
@@ -52,7 +53,7 @@ interface HotspotProps {
 
 function Hotspot({ feature, selected, exploded, onSelect }: HotspotProps) {
   const [hovered, setHovered] = useState(false)
-  const { x, y, z } = feature.position
+  const { x, y, z } = resolveHotspotPosition(feature)
   const pinClass = [
     'hotspot-pin',
     exploded ? 'exploded' : '',
@@ -67,9 +68,9 @@ function Hotspot({ feature, selected, exploded, onSelect }: HotspotProps) {
       position={[x, y, z]}
       center
       sprite
-      zIndexRange={[40, 0]}
+      zIndexRange={[20, 0]}
       occlude={false}
-      style={{ pointerEvents: 'auto', overflow: 'visible' }}
+      style={{ pointerEvents: 'none', overflow: 'visible' }}
     >
       <div className="hotspot">
         <button
@@ -77,6 +78,7 @@ function Hotspot({ feature, selected, exploded, onSelect }: HotspotProps) {
           className={pinClass}
           aria-label={`Focus ${feature.name}`}
           aria-pressed={selected}
+          style={{ pointerEvents: 'auto' }}
           onPointerDown={(event) => {
             event.stopPropagation()
           }}

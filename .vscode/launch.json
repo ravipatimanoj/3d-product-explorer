@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot - Product Explorer",
+      "request": "launch",
+      "mainClass": "com.productexplorer.ProductExplorerApplication",
+      "projectName": "product-explorer",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

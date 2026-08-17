@@ -17,16 +17,16 @@ export const cameraCommand: {
   lookAt: null,
 }
 
-export const EXPLODED_CAMERA = { x: 2.15, y: 2.55, z: 8.65 }
-export const EXPLODED_TARGET = { x: 0.05, y: 0.38, z: -0.22 }
+export const EXPLODED_CAMERA = { x: 4.15, y: 1.32, z: 4.35 }
+export const EXPLODED_TARGET = { x: 0.0, y: 0.18, z: -0.06 }
 
 export const EXPLODED_OFFSETS = {
   frame: [0, 0, 0],
-  display: [0, 1.15, 0.95],
-  internals: [1.22, 0.48, -0.05],
-  battery: [-1.18, 0.32, 0.18],
-  backGlass: [0, -0.55, -1.35],
-  camera: [0.22, 1.08, -2.05],
+  display: [0, 0.08, 0.62],
+  internals: [0.82, 0.2, -0.06],
+  battery: [-0.82, 0.1, 0.12],
+  backGlass: [0, -0.1, -0.95],
+  camera: [0.12, 0.18, -0.92],
 } as const
 
 export const EXPLODED_HOTSPOT_NODES = new Set([
@@ -75,10 +75,12 @@ export function offsetExplodedPosition(
 }
 
 const EXPLODED_EYE_FROM_LOOKAT: Record<string, Position> = {
-  processor: { x: 1.82, y: 0.88, z: -1.72 },
-  battery: { x: -1.85, y: 0.82, z: -1.65 },
-  camera: { x: 1.48, y: 0.42, z: -1.58 },
-  flash: { x: 0.68, y: -0.05, z: -0.45 },
+  display: { x: 0.18, y: 0.04, z: 2.35 },
+  processor: { x: 0.72, y: 0.18, z: -1.45 },
+  battery: { x: -1.05, y: 0.38, z: -0.92 },
+  camera: { x: 0.68, y: 0.16, z: -0.78 },
+  flash: { x: 0.34, y: 0.02, z: -0.36 },
+  frame: { x: 2.05, y: 0.35, z: 2.45 },
 }
 
 export function resolveExplodedCamera(
