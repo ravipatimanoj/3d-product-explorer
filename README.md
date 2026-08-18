@@ -15,16 +15,14 @@ A production-quality portfolio project for exploring products in an interactive 
 Contains the React application built with TypeScript and Vite. This is the client-facing UI where users browse and interact with products.
 
 - **Three.js + React Three Fiber** power an interactive procedural smartphone viewer
-- **3D models** will later be stored under `frontend/public/models/`
-- **AI-controlled 3D actions** will be integrated later
+- **AI assistant** sends natural language to the backend and executes structured 3D actions
 
 ### `backend/`
 
 Java Spring Boot REST API (Java 17, Spring Boot 3.3.5, Maven) that serves product and feature data to the frontend.
 
-- **In-memory mock data** is used for the product catalog in the current phase
-- **PostgreSQL** will later replace in-memory storage for product and feature data
-- **AI assistant integration** will be added later
+- **PostgreSQL + Flyway** store the product catalog (smartphone, TV, refrigerator)
+- **OpenAI** is called only from the backend (`POST /api/ai/chat`); the React app never holds the API key
 
 ## Product API
 
@@ -39,6 +37,7 @@ Base URL: `http://localhost:8080`
 | GET | `/api/products/{productId}` | Get a product by ID |
 | GET | `/api/products/{productId}/features` | List features for a product |
 | GET | `/api/products/{productId}/features/{featureId}` | Get a feature by ID |
+| POST | `/api/ai/chat` | Catalog-grounded chat + optional 3D action |
 
 ### Example Requests
 
@@ -132,9 +131,7 @@ curl http://localhost:8080/api/products/smartphone-001/features/camera
 
 ### Data Storage
 
-Product and feature data is currently served from an **in-memory catalog** inside the backend. This establishes a stable API contract for frontend development.
-
-In a future phase, the same API shape will be backed by **PostgreSQL** using JPA repositories, without requiring frontend changes.
+Product and feature data is served from **PostgreSQL** via Spring Data JPA. Flyway migrations create the schema and seed three products.
 
 ### CORS
 
@@ -160,4 +157,4 @@ The Vite app runs at `http://localhost:5173` and expects the backend at `http://
 
 ## Status
 
-Current phase: interactive 3D smartphone viewer with feature hotspots, camera focusing, component highlighting, and the existing Spring Boot product API. PostgreSQL, AI, exploded view, and color selection are later phases.
+Current phase: interactive 3D smartphone (hotspots, focus, explode, color, flash), PostgreSQL catalog (phone + TV + fridge), and an OpenAI assistant that returns validated viewer actions. TV/fridge are catalog + Q&A only. See `project_documentation_short.md`.

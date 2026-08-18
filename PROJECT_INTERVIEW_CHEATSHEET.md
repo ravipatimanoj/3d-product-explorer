@@ -16,7 +16,7 @@ It is a product inspector, not a chatbot with a canvas behind it. Postgres store
 
 ## 3 minutes
 
-Spec sheets are not spatial. I built a procedural phone so every catalog feature has a matching mesh name. CameraRig lerps the camera; ExplodedLayer lerps parts apart; materials highlight the selection. The API started in-memory so the JSON contract could freeze, then the same DTOs moved to Flyway and JPA. AI is orchestrated: the OpenAI key never enters Vite. The model must answer from catalog context and emit `FOCUS_FEATURE`, `EXPLODE_PRODUCT`, `ASSEMBLE_PRODUCT`, or `TOGGLE_FLASH`. Warp-drive IDs get dropped. Timeouts are 504, missing key 503, provider HTTP errors 502. LLM for intent, backend for policy, React for 3D.
+Spec sheets are not spatial. I built a procedural phone so every catalog feature has a matching mesh name. CameraRig lerps the camera; ExplodedLayer lerps parts apart; materials highlight the selection. The API started in-memory so the JSON contract could freeze, then the same DTOs moved to Flyway and JPA. AI is orchestrated: the OpenAI key never enters Vite. The model must answer from catalog context and emit `FOCUS_FEATURE`, `EXPLODE_PRODUCT`, `ASSEMBLE_PRODUCT` (optional featureId), `SHOW_OVERVIEW`, or `TOGGLE_FLASH`. Warp-drive IDs get dropped. Timeouts are 504, missing key 503, provider HTTP errors 502. LLM for intent, backend for policy, React for 3D.
 
 ## 5 minutes
 
@@ -26,7 +26,7 @@ Spec sheets are not spatial. I built a procedural phone so every catalog feature
 
 **Data.** Tables: `products`, `product_colors`, `product_features`, `feature_specifications`. Composite feature PK. `open-in-view=false`, `FetchMode.SUBSELECT`.
 
-**AI.** Prompt includes live feature ids and specs. `json_object`, temperature 0.2, 20s read timeout. `validate()` is the policy layer. `handleAiAction` is a switch on existing setters. `pendingExplodedFocus` waits until explode is true before close-up.
+**AI.** Prompt includes live feature ids and specs. `json_object`, temperature 0.2, 20s read timeout. `validate()` is the policy layer. `handleAiAction` is a switch on existing setters. `pendingFocusMode` waits until explode/assemble state matches before close-up.
 
 **Tests.** Spring tests hit real Postgres. AI tests use `RecordingAiProvider`. Provider tests use a local HttpServer and assert the key is not logged.
 
@@ -146,9 +146,11 @@ Prompt rules: catalog only; JSON envelope; feature questions also `FOCUS_FEATURE
 | Show me the camera | `FOCUS_FEATURE` / `camera` |
 | Tell me about the camera | `FOCUS_FEATURE` / `camera` + explanatory text |
 | Show camera in exploded view | `EXPLODE_PRODUCT` / `camera` |
+| Show display in assembled mode | `ASSEMBLE_PRODUCT` / `display` |
 | Show me the battery | `FOCUS_FEATURE` / `battery` |
 | What does the battery do? | `FOCUS_FEATURE` / `battery` + text |
 | Turn on the flash | `TOGGLE_FLASH` / `enabled: true` |
+| Show me the full phone | `SHOW_OVERVIEW` |
 | What colors? | `action: null` |
 
 OpenAI output **wording varies**; tests stub the provider and lock the **action contract**.
@@ -211,7 +213,7 @@ Viewer actions only if `product.id == smartphone-001` (hardcoded constant — me
 4. **Battery hidden** — ghost frame + back glass (`internalsOpen`).
 5. **Flash show vs on** — two actions; UI second-click toggles LED.
 6. **minDistance 2.1** — blocked close-ups → 0.35 + restore position after `orbit.update()`.
-7. **Explode+focus same tick** — `pendingExplodedFocus`.
+7. **Explode/assemble + focus same tick** — `pendingFocusMode` waits for the target mode, then `focusNonce++`.
 8. **Feature id aliases** — `resolveFeatureId`.
 9. **API key in the client** — never Vite-prefixed; server Bearer.
 10. **429 quota** — UI 502; log HTTP 429 `insufficient_quota`.

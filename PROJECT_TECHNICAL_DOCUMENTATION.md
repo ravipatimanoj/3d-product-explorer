@@ -103,7 +103,7 @@ Flow:
 | --- | --- |
 | Free-form text is the product | Text is one output; a **structured action** is the other |
 | Model may invent specs | Prompt says: answer only from catalog context; backend still validates IDs |
-| Frontend just displays the reply | Frontend **executes** `FOCUS_FEATURE`, `EXPLODE_PRODUCT`, `ASSEMBLE_PRODUCT`, `TOGGLE_FLASH` |
+| Frontend just displays the reply | Frontend **executes** `FOCUS_FEATURE`, `EXPLODE_PRODUCT`, `ASSEMBLE_PRODUCT`, `SHOW_OVERVIEW`, `TOGGLE_FLASH` |
 | Model would need scene APIs to move a camera | Model never sees Three.js; React already owns camera, highlight, explode, flash |
 | Conversation memory across turns | **No conversation history is sent.** Each request is a single user message plus freshly loaded product context |
 | Keyword matching (`if (text.includes("camera"))`) | OpenAI interprets phrasing; backend only allowlists the resulting action |
@@ -123,9 +123,10 @@ Capability flags live in `frontend/src/product3DCapabilities.ts`. Viewer-action 
 For `smartphone-001`:
 
 - Answer questions from the **current product catalog row** (name, description, colors, feature descriptions, specifications).
-- `FOCUS_FEATURE` — select and camera-focus a catalog feature.
+- `FOCUS_FEATURE` — select and camera-focus a catalog feature. Does **not** change exploded/assembled mode.
 - `EXPLODE_PRODUCT` — open exploded view, optionally with a `featureId` to focus after exploding.
-- `ASSEMBLE_PRODUCT` — close exploded view.
+- `ASSEMBLE_PRODUCT` — close exploded view, optionally with a `featureId` to focus after assembling (example: “show display in assembled mode”).
+- `SHOW_OVERVIEW` — same as the View Full Phone button (`overviewNonce`). Does not assemble/explode by itself.
 - `TOGGLE_FLASH` — set flash LED on or off via `enabled: true|false`.
 
 For `tv-001` and `refrigerator-001`:
@@ -361,7 +362,7 @@ useProduct
   products, selectedProductId, product, selectedFeature, loading, error
        ↓
 App
-  selectedColor, flashOn, exploded, focusNonce, overviewNonce, pendingExplodedFocus
+  selectedColor, flashOn, exploded, focusNonce, overviewNonce, pendingFocusMode
        ↓
   ProductViewer  ← 3D props
   FeaturePanel   ← details + color + feature buttons
@@ -375,7 +376,7 @@ There is no global store. Capability gating happens in `App` before props are pa
 ### `App.tsx`
 
 - **Responsibility:** Shell layout, session state, AI action orchestration, loading/error/empty screens.
-- **Important state:** from `useProduct` plus `focusNonce`, `overviewNonce`, `selectedColor`, `flashOn`, `exploded`, `pendingExplodedFocus`.
+- **Important state:** from `useProduct` plus `focusNonce`, `overviewNonce`, `selectedColor`, `flashOn`, `exploded`, `pendingFocusMode` (`'exploded' | 'assembled' | null`).
 - **Important functions:**
   - `handleSelectProduct` — resets flash/explode/color/nonces, then `selectProduct`.
   - `handleSelectFeature` — no-op without `featureFocus`; second click on flash toggles LED; otherwise selects feature and bumps `focusNonce`.
@@ -388,7 +389,7 @@ There is no global store. Capability gating happens in `App` before props are pa
 - **Calls:** child components and hook.
 - **Why it exists:** Single place where UI clicks and AI actions converge so the 3D viewer has one input model.
 
-The `pendingExplodedFocus` effect: if AI asks to explode **and** focus a part, explode is set first. Camera offsets for exploded focus are only correct after `exploded === true`. The effect then increments `focusNonce`.
+The `pendingFocusMode` effect: if AI asks to explode **or assemble** and also focus a part, the mode flag is set first. Camera offsets are only correct after `exploded` matches the target mode. The effect then increments `focusNonce`.
 
 `ProductViewer` is keyed by `selectedProductId` so the Canvas remounts on product change.
 
@@ -581,7 +582,7 @@ Frontend mirrors of backend DTOs: `Position`, `FeatureSpecification`, `ProductFe
 ### `types/ai.ts`
 
 ```ts
-AiActionType = 'FOCUS_FEATURE' | 'EXPLODE_PRODUCT' | 'ASSEMBLE_PRODUCT' | 'TOGGLE_FLASH'
+AiActionType = 'FOCUS_FEATURE' | 'EXPLODE_PRODUCT' | 'ASSEMBLE_PRODUCT' | 'TOGGLE_FLASH' | 'SHOW_OVERVIEW'
 AiAction { type, featureId?, enabled? }
 AiChatResponse { message, action }
 ```
@@ -681,7 +682,7 @@ Transitions are frame-loop lerps, not camera.position.set snaps (except initial 
 
 ### Exploded view vs assembled view
 
-`App.exploded` → `ProductViewer` sets `explodedMode.current`. `ExplodedLayer` targets offsets or origin. Overview camera switches between `OVERVIEW_*` and `EXPLODED_*`. UI button labels "Exploded View" / "Assembled View". AI `ASSEMBLE_PRODUCT` only sets `exploded` false; it does not clear the selected feature.
+`App.exploded` → `ProductViewer` sets `explodedMode.current`. `ExplodedLayer` targets offsets or origin. Overview camera switches between `OVERVIEW_*` and `EXPLODED_*`. UI button labels "Exploded View" / "Assembled View". AI `ASSEMBLE_PRODUCT` sets `exploded` false and may also focus a `featureId`. `SHOW_OVERVIEW` only bumps `overviewNonce` (same as View Full Phone).
 
 ### Flash behavior
 
@@ -1111,13 +1112,15 @@ Tests inject `RecordingAiProvider` so they assert **validation**, not live model
 
 - Answer only from catalog; do not invent specs.
 - Return JSON only in the documented shapes.
-- Allowed types: `NONE`, `FOCUS_FEATURE`, `EXPLODE_PRODUCT`, `ASSEMBLE_PRODUCT`, `TOGGLE_FLASH`.
+- Allowed types: `NONE`, `FOCUS_FEATURE`, `EXPLODE_PRODUCT`, `ASSEMBLE_PRODUCT`, `SHOW_OVERVIEW`, `TOGGLE_FLASH`.
 - Feature-specific questions **also** return `FOCUS_FEATURE` (including "what is", "tell me about", "what does X do").
 - Product-level questions (colors, overall description) stay `action: null`.
 - "show / focus / zoom / where is" → `FOCUS_FEATURE`.
 - Explode without a component → `EXPLODE_PRODUCT`.
 - "show X in exploded view" / internals → `EXPLODE_PRODUCT` with `featureId`.
-- Assemble → `ASSEMBLE_PRODUCT`.
+- Assemble without a component → `ASSEMBLE_PRODUCT`.
+- Show X in assembled mode → `ASSEMBLE_PRODUCT` with that `featureId`.
+- View full phone / reset view → `SHOW_OVERVIEW`.
 - Turn flash on/off → `TOGGLE_FLASH`. **"show me the flash" is FOCUS_FEATURE, not TOGGLE_FLASH.**
 - Viewer actions ALLOWED only when `product.id == smartphone-001`.
 
@@ -1170,7 +1173,7 @@ Intended:
 
 Covered by `explodeProduct_withFeatureId_isPreserved`.
 
-React: `setExploded(true)`; `selectFeature(camera)`; if already exploded, `focusNonce++` immediately; else `pendingExplodedFocus = true` until explode state is true, then `focusNonce++`. Camera uses exploded lookAt + `EXPLODED_EYE_FROM_LOOKAT.camera`.
+React: `setExploded(true)`; `selectFeature(camera)`; if already exploded, `focusNonce++` immediately; else `pendingFocusMode = 'exploded'` until explode state is true, then `focusNonce++`. Camera uses exploded lookAt + `EXPLODED_EYE_FROM_LOOKAT.camera`. The assembled counterpart uses `ASSEMBLE_PRODUCT` + `featureId` and `pendingFocusMode = 'assembled'`.
 
 #### "Show me the battery"
 
@@ -1222,11 +1225,17 @@ Allowed after validation (viewer types only for `smartphone-001`):
 
 ### `ASSEMBLE_PRODUCT`
 
-- **Meaning:** Collapse layers.
+- **Meaning:** Collapse layers. Optional `featureId` to focus a component in assembled space (symmetric with explode).
+- **Parameters:** `featureId` optional. Unknown featureId → assemble **without** feature (action kept, id dropped).
+- **Frontend:** `setExploded(false)`; if feature present and `featureFocus`, select it and sequence focus after assemble via `pendingFocusMode = 'assembled'`.
+- **3D result:** layers lerp to origin; CameraRig uses assembled feature camera when a feature is selected, otherwise assembled overview.
+
+### `SHOW_OVERVIEW`
+
+- **Meaning:** Same as the View Full Phone button.
 - **Parameters:** none.
-- **Validation:** always accepted for smartphone.
-- **Frontend:** `setExploded(false)` if `explodedView` capability.
-- **3D result:** layers lerp to origin; CameraRig treats explode flag change — if a feature is still selected it will try to keep/use current feature camera (because `cameraCommand.featureId` is still set). Assembled overview is used when no feature camera is active.
+- **Frontend:** `setOverviewNonce(n+1)`. Does not change exploded/assembled or selected feature.
+- **3D result:** CameraRig lerps to overview (assembled or exploded overview depending on current mode).
 
 ### `TOGGLE_FLASH`
 
@@ -1445,7 +1454,7 @@ Evidence: git diffs, current code, and implementation transcripts. Where a commi
 ### Exploded + feature focus sequencing
 
 - **Problem:** `EXPLODE_PRODUCT` + `featureId` set explode and focus in one React tick; CameraRig used assembled offsets or exploded-overview instead of exploded close-up.
-- **Solution:** `pendingExplodedFocus`; effect waits until `exploded` is true, then increments `focusNonce`. If already exploded, increment immediately. CameraRig, on explode-flag change, prefers existing feature camera over exploded overview when `cameraCommand.featureId` is set.
+- **Solution:** `pendingFocusMode`; effect waits until `exploded` matches the requested mode, then increments `focusNonce`. If already in that mode, increment immediately. CameraRig, on explode-flag change, prefers existing feature camera over exploded overview when `cameraCommand.featureId` is set.
 - **Why:** Exploded lookAt depends on `exploded` being true inside `resolveFeatureFocus`.
 
 ### AI feature ID mapping
@@ -1572,7 +1581,7 @@ Same HTTP path
 
 ```
 OpenAI → EXPLODE_PRODUCT + featureId camera
-  → setExploded(true); selectFeature(camera); pendingExplodedFocus if needed
+  → setExploded(true); selectFeature(camera); pendingFocusMode if needed
   → layers separate
   → effect focusNonce++
   → resolveFeatureFocus(camera, exploded=true)
@@ -1609,7 +1618,7 @@ Start with the problem: spec sheets do not show spatial structure. I built a pro
 
 The API started in-memory so the frontend contract could freeze, then I moved the same JSON to PostgreSQL with Flyway and JPA. Television and refrigerator rows exist, but capabilities flags turn off 3D and the AI backend refuses viewer actions for those IDs.
 
-AI is orchestrated, not embedded in the scene. The key never leaves the server. OpenAI is required to answer only from catalog context and to emit FOCUS_FEATURE, EXPLODE_PRODUCT, ASSEMBLE_PRODUCT, or TOGGLE_FLASH. If it invents a warp drive, we drop the action. If the account is out of quota, the user sees a generic 502 and we log a redacted 429. Timeouts are 504. Missing key is 503.
+AI is orchestrated, not embedded in the scene. The key never leaves the server. OpenAI is required to answer only from catalog context and to emit FOCUS_FEATURE, EXPLODE_PRODUCT, ASSEMBLE_PRODUCT (optional featureId), SHOW_OVERVIEW, or TOGGLE_FLASH. If it invents a warp drive, we drop the action. If the account is out of quota, the user sees a generic 502 and we log a redacted 429. Timeouts are 504. Missing key is 503.
 
 That split—LLM for intent, backend for policy, React for 3D—is the architecture I would defend in a design interview.
 
@@ -1623,7 +1632,7 @@ That split—LLM for intent, backend for policy, React for 3D—is the architect
 
 **Data.** Four tables, composite feature PK, Flyway seed. open-in-view is false; mapping happens in a read-only transaction with SUBSELECT fetches.
 
-**AI.** AiService.buildSystemPrompt includes every feature id and spec. OpenAiChatProvider uses json_object, temperature 0.2, 20s read timeout. validate() is the security boundary: allowlist, product capability, feature resolution. React handleAiAction is a switch that calls the same setters as the UI, with pendingExplodedFocus so explode-then-focus uses exploded camera math.
+**AI.** AiService.buildSystemPrompt includes every feature id and spec. OpenAiChatProvider uses json_object, temperature 0.2, 20s read timeout. validate() is the security boundary: allowlist, product capability, feature resolution. React handleAiAction is a switch that calls the same setters as the UI, with pendingFocusMode so explode/assemble-then-focus uses the correct camera math.
 
 **Tests.** Controller and service tests hit real Postgres. AI tests swap in RecordingAiProvider. Provider tests spin a local HttpServer for 401 and timeout, and assert the API key never appears in logs.
 

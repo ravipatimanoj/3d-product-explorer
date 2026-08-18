@@ -2,7 +2,7 @@
 
 Use this as a slide-by-slide speaking script. Technical depth lives in `PROJECT_TECHNICAL_DOCUMENTATION.md`. This file is what you say and show.
 
-**Source of truth:** current `main` (`fcc85a8`). Do not quote the root `README.md` — it is stale (it still says in-memory catalog and “AI later”).
+**Source of truth:** current implementation on `main`. Prefer `project_documentation_short.md` for a compact overview.
 
 ---
 
@@ -203,7 +203,8 @@ Say it slowly:
 | --- | --- | --- |
 | `FOCUS_FEATURE` | `featureId` | Select + camera lerp + highlight |
 | `EXPLODE_PRODUCT` | optional `featureId` | Layers apart; optional sequenced focus |
-| `ASSEMBLE_PRODUCT` | — | Layers together |
+| `ASSEMBLE_PRODUCT` | optional `featureId` | Layers together; optional assembled close-up |
+| `SHOW_OVERVIEW` | — | View Full Phone camera, mode unchanged |
 | `TOGGLE_FLASH` | `enabled` bool | LED / point light only |
 
 Unknown type → keep text, drop action.  
@@ -270,7 +271,7 @@ Pick three if short on time:
 
 1. **Hotspot clicks** — Html `pointerEvents: none` except the button.
 2. **OrbitControls minDistance 2.1** fought close-ups; restore camera after `controls.update()`.
-3. **Explode then focus** — `pendingExplodedFocus` because exploded camera math depends on `exploded === true`.
+3. **Explode/assemble then focus** — `pendingFocusMode` because camera math depends on the current exploded flag.
 4. **Battery invisible** — ghost the frame, not only the back glass.
 5. **Show flash ≠ turn on flash**.
 
