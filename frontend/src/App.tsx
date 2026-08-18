@@ -26,7 +26,9 @@ function App() {
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [flashOn, setFlashOn] = useState(false)
   const [exploded, setExploded] = useState(false)
-  const [pendingExplodedFocus, setPendingExplodedFocus] = useState(false)
+  const [pendingFocusMode, setPendingFocusMode] = useState<
+    'exploded' | 'assembled' | null
+  >(null)
   const capabilities = getProduct3DCapabilities(selectedProductId)
 
   useEffect(() => {
@@ -38,13 +40,33 @@ function App() {
   }, [product?.id, product?.defaultColor])
 
   useEffect(() => {
-    if (!exploded || !pendingExplodedFocus || !selectedFeature) {
+    if (!pendingFocusMode || !selectedFeature) {
+      return
+    }
+
+    const ready =
+      pendingFocusMode === 'exploded' ? exploded : !exploded
+    if (!ready) {
       return
     }
 
     setFocusNonce((value) => value + 1)
-    setPendingExplodedFocus(false)
-  }, [exploded, pendingExplodedFocus, selectedFeature])
+    setPendingFocusMode(null)
+  }, [exploded, pendingFocusMode, selectedFeature])
+
+  const focusFeatureInMode = (
+    feature: ProductFeature,
+    targetExploded: boolean,
+  ) => {
+    selectFeature(feature)
+    if (exploded === targetExploded) {
+      setFocusNonce((value) => value + 1)
+      setPendingFocusMode(null)
+      return
+    }
+
+    setPendingFocusMode(targetExploded ? 'exploded' : 'assembled')
+  }
 
   const handleSelectProduct = (productId: string) => {
     setFlashOn(false)
@@ -52,7 +74,7 @@ function App() {
     setSelectedColor(null)
     setFocusNonce(0)
     setOverviewNonce((value) => value + 1)
-    setPendingExplodedFocus(false)
+    setPendingFocusMode(null)
     selectProduct(productId)
   }
 
@@ -97,6 +119,7 @@ function App() {
           (item) => item.id === action.featureId,
         )
         if (feature) {
+          setPendingFocusMode(null)
           selectFeature(feature)
           setFocusNonce((value) => value + 1)
         }
@@ -111,19 +134,30 @@ function App() {
           : null
         setExploded(true)
         if (feature && capabilities.featureFocus) {
-          selectFeature(feature)
-          if (exploded) {
-            setFocusNonce((value) => value + 1)
-          } else {
-            setPendingExplodedFocus(true)
-          }
+          focusFeatureInMode(feature, true)
+        } else {
+          setPendingFocusMode(null)
         }
         return
       }
-      case 'ASSEMBLE_PRODUCT':
-        if (capabilities.explodedView) {
-          setExploded(false)
+      case 'ASSEMBLE_PRODUCT': {
+        if (!capabilities.explodedView) {
+          return
         }
+        const feature = action.featureId
+          ? product.features.find((item) => item.id === action.featureId)
+          : null
+        setExploded(false)
+        if (feature && capabilities.featureFocus) {
+          focusFeatureInMode(feature, false)
+        } else {
+          setPendingFocusMode(null)
+        }
+        return
+      }
+      case 'SHOW_OVERVIEW':
+        setPendingFocusMode(null)
+        setOverviewNonce((value) => value + 1)
         return
       case 'TOGGLE_FLASH':
         if (capabilities.flash && typeof action.enabled === 'boolean') {

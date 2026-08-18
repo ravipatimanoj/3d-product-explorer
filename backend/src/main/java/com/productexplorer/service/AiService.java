@@ -26,14 +26,16 @@ public class AiService {
             "FOCUS_FEATURE",
             "EXPLODE_PRODUCT",
             "ASSEMBLE_PRODUCT",
-            "TOGGLE_FLASH"
+            "TOGGLE_FLASH",
+            "SHOW_OVERVIEW"
     );
 
     private static final Set<String> VIEWER_ACTIONS = Set.of(
             "FOCUS_FEATURE",
             "EXPLODE_PRODUCT",
             "ASSEMBLE_PRODUCT",
-            "TOGGLE_FLASH"
+            "TOGGLE_FLASH",
+            "SHOW_OVERVIEW"
     );
 
     private final ProductService productService;
@@ -78,22 +80,32 @@ public class AiService {
                 or
                 {"message":"string","action":{"type":"ASSEMBLE_PRODUCT"}}
                 or
+                {"message":"string","action":{"type":"ASSEMBLE_PRODUCT","featureId":"display"}}
+                or
+                {"message":"string","action":{"type":"SHOW_OVERVIEW"}}
+                or
                 {"message":"string","action":{"type":"TOGGLE_FLASH","enabled":true}}
 
-                Allowed action types: NONE, FOCUS_FEATURE, EXPLODE_PRODUCT, ASSEMBLE_PRODUCT, TOGGLE_FLASH.
+                Allowed action types: NONE, FOCUS_FEATURE, EXPLODE_PRODUCT, ASSEMBLE_PRODUCT, SHOW_OVERVIEW, TOGGLE_FLASH.
                 Use action null or type NONE only for product-level questions that are not about a specific catalog feature.
                 FOCUS_FEATURE requires a featureId from the catalog ids below.
                 EXPLODE_PRODUCT may include featureId when the user wants a component shown in exploded view.
+                ASSEMBLE_PRODUCT may include featureId when the user wants a component shown in assembled view.
+                SHOW_OVERVIEW has no featureId.
                 TOGGLE_FLASH requires enabled true or false.
                 Never return any other action type. Never return JavaScript or extra fields.
+                You cannot see the current 3D view. Never say the product is already assembled, exploded, or focused. Always return the action the user asked for.
 
                 Intent rules:
                 - If the user asks about a specific catalog feature, answer from the catalog AND return FOCUS_FEATURE for that feature. This includes "what is", "tell me about", "what does X do", "what camera", "battery capacity", and "what processor".
+                - FOCUS_FEATURE must not change assembled or exploded mode. Do not use FOCUS_FEATURE when the user names assembled or exploded view.
                 - Product-level questions that are not about one catalog feature ("what colors", price, overall product description) stay informational (action null).
                 - Commands like "show me", "focus on", "zoom into", "where is" a component are FOCUS_FEATURE.
                 - "explode" or "take it apart" without a component is EXPLODE_PRODUCT.
                 - "show X in exploded view", "inside the phone", or internals of a component is EXPLODE_PRODUCT with that featureId.
-                - "put it back together", "assemble" is ASSEMBLE_PRODUCT.
+                - "put it back together" or "assemble" without a component is ASSEMBLE_PRODUCT.
+                - "show X in assembled mode", "show X assembled", or "assemble and show X" is ASSEMBLE_PRODUCT with that featureId.
+                - "show the full phone", "view full phone", "reset the view", or "zoom out to the whole phone" is SHOW_OVERVIEW. Do not assemble or explode unless the user also asked for that.
                 - "turn on/off the flash" is TOGGLE_FLASH. Do not use TOGGLE_FLASH for "show me the flash".
                 - "show me the flash" is FOCUS_FEATURE with featureId flash.
 
@@ -185,9 +197,10 @@ public class AiService {
             case "FOCUS_FEATURE" -> validateFocus(product, parsed.message(), action.featureId());
             case "TOGGLE_FLASH" -> validateFlash(parsed.message(), action.enabled());
             case "EXPLODE_PRODUCT" -> validateExplode(product, parsed.message(), action.featureId());
-            case "ASSEMBLE_PRODUCT" -> new AiChatResponse(
+            case "ASSEMBLE_PRODUCT" -> validateAssemble(product, parsed.message(), action.featureId());
+            case "SHOW_OVERVIEW" -> new AiChatResponse(
                     parsed.message(),
-                    AiActionResponse.of("ASSEMBLE_PRODUCT")
+                    AiActionResponse.of("SHOW_OVERVIEW")
             );
             default -> new AiChatResponse(parsed.message(), null);
         };
@@ -213,6 +226,17 @@ public class AiService {
             return new AiChatResponse(message, AiActionResponse.of("EXPLODE_PRODUCT"));
         }
         return new AiChatResponse(message, AiActionResponse.explode(resolved));
+    }
+
+    private AiChatResponse validateAssemble(ProductResponse product, String message, String featureId) {
+        if (featureId == null || featureId.isBlank()) {
+            return new AiChatResponse(message, AiActionResponse.of("ASSEMBLE_PRODUCT"));
+        }
+        String resolved = resolveFeatureId(product.features(), featureId);
+        if (resolved == null) {
+            return new AiChatResponse(message, AiActionResponse.of("ASSEMBLE_PRODUCT"));
+        }
+        return new AiChatResponse(message, AiActionResponse.assemble(resolved));
     }
 
     private AiChatResponse validateFlash(String message, Boolean enabled) {

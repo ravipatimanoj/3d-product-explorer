@@ -132,6 +132,55 @@ class AiServiceTest {
 
         assertThat(response.action()).isNotNull();
         assertThat(response.action().type()).isEqualTo("ASSEMBLE_PRODUCT");
+        assertThat(response.action().featureId()).isNull();
+    }
+
+    @Test
+    void assembleProduct_withFeatureId_isPreserved() {
+        aiProvider.setNextResponse("""
+                {
+                  "message": "Showing the display in assembled view.",
+                  "action": { "type": "ASSEMBLE_PRODUCT", "featureId": "display" }
+                }
+                """);
+
+        AiChatResponse response = aiService.chat("smartphone-001", "Show display in assembled mode");
+
+        assertThat(response.action()).isNotNull();
+        assertThat(response.action().type()).isEqualTo("ASSEMBLE_PRODUCT");
+        assertThat(response.action().featureId()).isEqualTo("display");
+    }
+
+    @Test
+    void assembleProduct_unknownFeatureId_stillAssembles() {
+        aiProvider.setNextResponse("""
+                {
+                  "message": "Assembling the phone.",
+                  "action": { "type": "ASSEMBLE_PRODUCT", "featureId": "warp-drive" }
+                }
+                """);
+
+        AiChatResponse response = aiService.chat("smartphone-001", "Assemble the warp drive");
+
+        assertThat(response.action()).isNotNull();
+        assertThat(response.action().type()).isEqualTo("ASSEMBLE_PRODUCT");
+        assertThat(response.action().featureId()).isNull();
+    }
+
+    @Test
+    void showOverview_returnsOverviewAction() {
+        aiProvider.setNextResponse("""
+                {
+                  "message": "Showing the full phone.",
+                  "action": { "type": "SHOW_OVERVIEW" }
+                }
+                """);
+
+        AiChatResponse response = aiService.chat("smartphone-001", "Show me the full phone");
+
+        assertThat(response.action()).isNotNull();
+        assertThat(response.action().type()).isEqualTo("SHOW_OVERVIEW");
+        assertThat(response.action().featureId()).isNull();
     }
 
     @Test

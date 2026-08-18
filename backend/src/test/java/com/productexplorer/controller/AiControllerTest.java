@@ -113,4 +113,23 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.action.type", is("EXPLODE_PRODUCT")))
                 .andExpect(jsonPath("$.action.featureId", is("camera")));
     }
+
+    @Test
+    void chat_assembleWithFeature_returnsFeatureId() throws Exception {
+        aiProvider.setNextResponse("""
+                {
+                  "message": "Showing the display in assembled view.",
+                  "action": { "type": "ASSEMBLE_PRODUCT", "featureId": "display" }
+                }
+                """);
+
+        mockMvc.perform(post("/api/ai/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"productId":"smartphone-001","message":"Show display in assembled mode"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.action.type", is("ASSEMBLE_PRODUCT")))
+                .andExpect(jsonPath("$.action.featureId", is("display")));
+    }
 }

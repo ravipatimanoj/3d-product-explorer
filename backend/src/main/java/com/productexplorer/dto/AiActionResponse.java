@@ -16,6 +16,10 @@ public record AiActionResponse(
         return new AiActionResponse("EXPLODE_PRODUCT", featureId, null);
     }
 
+    public static AiActionResponse assemble(String featureId) {
+        return new AiActionResponse("ASSEMBLE_PRODUCT", featureId, null);
+    }
+
     public static AiActionResponse focus(String featureId) {
         return new AiActionResponse("FOCUS_FEATURE", featureId, null);
     }

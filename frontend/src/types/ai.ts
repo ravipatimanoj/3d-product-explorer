@@ -3,6 +3,7 @@ export type AiActionType =
   | 'EXPLODE_PRODUCT'
   | 'ASSEMBLE_PRODUCT'
   | 'TOGGLE_FLASH'
+  | 'SHOW_OVERVIEW'
 
 export interface AiAction {
   type: AiActionType
